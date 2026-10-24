@@ -1,0 +1,4861 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="coffee" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f5efe3">
+<script>
+/* Runs before first paint so the stored theme and palette apply immediately
+   without flashing the default light theme. */
+(function () {
+  var h = document.documentElement;
+
+  try {
+    var c = JSON.parse(localStorage.getItem("onhand_theme_cache") || "null");
+
+    if (c && (c.theme === "dark" || c.theme === "light")) {
+      h.setAttribute("data-theme", c.theme);
+    }
+    if (c && typeof c.palette === "string" && /^[a-z0-9-]{1,30}$/.test(c.palette)) {
+      h.setAttribute("data-palette", c.palette);
+    }
+    if (c && typeof c.bg === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c.bg)) {
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute("content", c.bg);
+    }
+  } catch (e) { /* ignore: fall back to defaults */ }
+
+  h.classList.add("booting");
+  setTimeout(function () { h.classList.remove("booting"); }, 3000);
+})();
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="OnHand">
+<meta name="format-detection" content="telephone=no">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="OnHand — Offline-first cash on hand and expense tracker with local database.">
+<title>OnHand</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%23252321'/%3E%3Crect x='28' y='48' width='136' height='96' rx='14' fill='none' stroke='%23f5efe3' stroke-width='10'/%3E%3Cpath d='M124 84h40v24h-40a12 12 0 0 1 0-24z' fill='%23b85e49' stroke='%23f5efe3' stroke-width='8'/%3E%3Ccircle cx='138' cy='96' r='5' fill='%23fffdf8'/%3E%3Cpath d='M56 82h36M56 110h24' stroke='%23b85e49' stroke-width='10' stroke-linecap='round'/%3E%3C/svg%3E">
+
+<style>
+/* ============================================================
+   ONHAND — Cash on Hand & Expense Tracker (Same UI as ipon)
+   CSS
+   ============================================================ */
+
+/* ============================================================
+   1. RESET & BASE
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  font-size: 14px;
+  line-height: 1.4;
+
+  background: var(--bg);
+  color: var(--ink);
+
+  min-height: 100vh;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+
+  overflow-x: hidden;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+body.app-locked {
+  overflow: hidden;
+}
+
+html.booting body {
+  visibility: hidden;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0;
+  transition: transform 0.1s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+  outline: none;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+
+/* ============================================================
+   2. PALETTES (8 × light/dark)
+   ============================================================ */
+
+/* -------- 2.1 COFFEE (default) -------- */
+:root,
+[data-palette="coffee"] {
+  --bg: #f5efe3;
+  --bg-deep: #ebe2d2;
+  --surface: #fffdf8;
+  --surface-2: #ebe2d2;
+
+  --ink: #252321;
+  --ink-soft: #4a4440;
+  --muted: #817b72;
+
+  --line: #d9d0c1;
+  --line-strong: #b8ad9b;
+
+  --accent: #b85e49;
+  --accent-dark: #994b3a;
+  --accent-soft: rgba(184, 94, 73, 0.12);
+  --accent-text: #fffaf2;
+
+  --good: #60705c;
+  --good-soft: rgba(96, 112, 92, 0.14);
+  --bad: #b85e49;
+  --bad-soft: rgba(184, 94, 73, 0.12);
+  --warn: #b78a4a;
+  --coffee: #684334;
+  --shadow: 0 6px 18px rgba(74, 48, 32, 0.07);
+}
+
+[data-palette="coffee"][data-theme="dark"] {
+  --bg: #211c18;
+  --bg-deep: #2d2520;
+  --surface: #302923;
+  --surface-2: #2d2520;
+
+  --ink: #f5eee3;
+  --ink-soft: #ccc4b8;
+  --muted: #a79d91;
+
+  --line: #493e35;
+  --line-strong: #5c4f43;
+
+  --accent: #c56a54;
+  --accent-dark: #a95340;
+  --accent-soft: rgba(197, 106, 84, 0.18);
+  --accent-text: #ffffff;
+
+  --good: #91a28a;
+  --good-soft: rgba(145, 162, 138, 0.18);
+  --bad: #c56a54;
+  --bad-soft: rgba(197, 106, 84, 0.18);
+  --warn: #cba363;
+  --coffee: #c89a7b;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* -------- 2.2 MIDNIGHT (OLED Dark) -------- */
+[data-palette="midnight"] {
+  --bg: #eaf1ec;
+  --bg-deep: #d8e4db;
+  --surface: #f7fbf8;
+  --surface-2: #d8e4db;
+
+  --ink: #0d1e14;
+  --ink-soft: #23402e;
+  --muted: #577362;
+
+  --line: #b9d1c1;
+  --line-strong: #90b39c;
+
+  --accent: #008f5d;
+  --accent-dark: #00734a;
+  --accent-soft: rgba(0, 143, 93, 0.12);
+  --accent-text: #f0fdf6;
+
+  --good: #008f5d;
+  --good-soft: rgba(0, 143, 93, 0.12);
+  --bad: #cc3d3d;
+  --bad-soft: rgba(204, 61, 61, 0.12);
+  --warn: #b88628;
+  --coffee: #16472d;
+  --shadow: 0 6px 18px rgba(10, 40, 20, 0.08);
+}
+
+[data-palette="midnight"][data-theme="dark"] {
+  --bg: #000000;
+  --bg-deep: #0a0e0c;
+  --surface: #101513;
+  --surface-2: #161e1a;
+
+  --ink: #f0fdf4;
+  --ink-soft: #c6e3d0;
+  --muted: #728c7c;
+
+  --line: #1c2e24;
+  --line-strong: #2a4536;
+
+  --accent: #00e599;
+  --accent-dark: #00b87a;
+  --accent-soft: rgba(0, 229, 153, 0.16);
+  --accent-text: #021209;
+
+  --good: #00e599;
+  --good-soft: rgba(0, 229, 153, 0.16);
+  --bad: #ff5252;
+  --bad-soft: rgba(255, 82, 82, 0.16);
+  --warn: #ffb74d;
+  --coffee: #00e599;
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.85);
+}
+
+/* -------- 2.3 OCEAN -------- */
+[data-palette="ocean"] {
+  --bg: #eef4f5;
+  --bg-deep: #dde8ea;
+  --surface: #faffff;
+  --surface-2: #dde8ea;
+
+  --ink: #1a2426;
+  --ink-soft: #3d4a4d;
+  --muted: #6f8083;
+
+  --line: #c8d5d8;
+  --line-strong: #a3b4b8;
+
+  --accent: #4a8fa8;
+  --accent-dark: #3a7286;
+  --accent-soft: rgba(74, 143, 168, 0.12);
+  --accent-text: #f0fcff;
+
+  --good: #4a8a6c;
+  --good-soft: rgba(74, 138, 108, 0.14);
+  --bad: #b85e49;
+  --bad-soft: rgba(184, 94, 73, 0.12);
+  --warn: #c08a3e;
+  --coffee: #3a5a66;
+  --shadow: 0 6px 18px rgba(26, 60, 74, 0.08);
+}
+
+[data-palette="ocean"][data-theme="dark"] {
+  --bg: #131e22;
+  --bg-deep: #1c2a2f;
+  --surface: #1e2d33;
+  --surface-2: #1c2a2f;
+
+  --ink: #e6f0f2;
+  --ink-soft: #b8c8cc;
+  --muted: #8fa3a8;
+
+  --line: #2f4147;
+  --line-strong: #43555b;
+
+  --accent: #5fa3bb;
+  --accent-dark: #4a8fa8;
+  --accent-soft: rgba(95, 163, 187, 0.18);
+  --accent-text: #ffffff;
+
+  --good: #6bab8c;
+  --good-soft: rgba(107, 171, 140, 0.18);
+  --bad: #c56a54;
+  --bad-soft: rgba(197, 106, 84, 0.18);
+  --warn: #d0a355;
+  --coffee: #7ab0c2;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* -------- 2.4 FOREST -------- */
+[data-palette="forest"] {
+  --bg: #eef2ea;
+  --bg-deep: #dde4d5;
+  --surface: #fbfff7;
+  --surface-2: #dde4d5;
+
+  --ink: #1e2519;
+  --ink-soft: #444c3d;
+  --muted: #76806a;
+
+  --line: #ccd4c0;
+  --line-strong: #aab59a;
+
+  --accent: #5c8a5c;
+  --accent-dark: #476e47;
+  --accent-soft: rgba(92, 138, 92, 0.12);
+  --accent-text: #f3fff0;
+
+  --good: #5c8a5c;
+  --good-soft: rgba(92, 138, 92, 0.14);
+  --bad: #b85e49;
+  --bad-soft: rgba(184, 94, 73, 0.12);
+  --warn: #b78a4a;
+  --coffee: #4d5c3f;
+  --shadow: 0 6px 18px rgba(40, 60, 30, 0.08);
+}
+
+[data-palette="forest"][data-theme="dark"] {
+  --bg: #161c14;
+  --bg-deep: #1f281c;
+  --surface: #222b1f;
+  --surface-2: #1f281c;
+
+  --ink: #e8efe2;
+  --ink-soft: #c0cab8;
+  --muted: #98a38a;
+
+  --line: #384532;
+  --line-strong: #4e5d44;
+
+  --accent: #78a878;
+  --accent-dark: #5c8a5c;
+  --accent-soft: rgba(120, 168, 120, 0.18);
+  --accent-text: #ffffff;
+
+  --good: #8ec18e;
+  --good-soft: rgba(142, 193, 142, 0.18);
+  --bad: #c56a54;
+  --bad-soft: rgba(197, 106, 84, 0.18);
+  --warn: #cba363;
+  --coffee: #8ea87c;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* -------- 2.5 PLUM -------- */
+[data-palette="plum"] {
+  --bg: #f5eef2;
+  --bg-deep: #ebdde5;
+  --surface: #fffbff;
+  --surface-2: #ebdde5;
+
+  --ink: #2b1e26;
+  --ink-soft: #4f3f4a;
+  --muted: #8a7583;
+
+  --line: #d6c4cf;
+  --line-strong: #b8a2b1;
+
+  --accent: #8b5a7d;
+  --accent-dark: #6d4561;
+  --accent-soft: rgba(139, 90, 125, 0.12);
+  --accent-text: #fff5fb;
+
+  --good: #5c7a5c;
+  --good-soft: rgba(92, 122, 92, 0.14);
+  --bad: #b85e49;
+  --bad-soft: rgba(184, 94, 73, 0.12);
+  --warn: #b78a4a;
+  --coffee: #6b4a5e;
+  --shadow: 0 6px 18px rgba(70, 30, 60, 0.09);
+}
+
+[data-palette="plum"][data-theme="dark"] {
+  --bg: #1d1419;
+  --bg-deep: #291d24;
+  --surface: #2d2029;
+  --surface-2: #291d24;
+
+  --ink: #f2e6ee;
+  --ink-soft: #cbbbc6;
+  --muted: #a48d9c;
+
+  --line: #42303c;
+  --line-strong: #5a4551;
+
+  --accent: #a878a0;
+  --accent-dark: #8b5a7d;
+  --accent-soft: rgba(168, 120, 160, 0.18);
+  --accent-text: #ffffff;
+
+  --good: #8eaa8e;
+  --good-soft: rgba(142, 170, 142, 0.18);
+  --bad: #c56a54;
+  --bad-soft: rgba(197, 106, 84, 0.18);
+  --warn: #cba363;
+  --coffee: #ba9aac;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* -------- 2.6 SLATE -------- */
+[data-palette="slate"] {
+  --bg: #eef1f3;
+  --bg-deep: #dfe4e8;
+  --surface: #fbfdfe;
+  --surface-2: #dfe4e8;
+
+  --ink: #1c2328;
+  --ink-soft: #3d474d;
+  --muted: #6f7a80;
+
+  --line: #c8d0d5;
+  --line-strong: #a3aeb4;
+
+  --accent: #607080;
+  --accent-dark: #4a5765;
+  --accent-soft: rgba(96, 112, 128, 0.12);
+  --accent-text: #f5f8fa;
+
+  --good: #5c7a6c;
+  --good-soft: rgba(92, 122, 108, 0.14);
+  --bad: #b85e49;
+  --bad-soft: rgba(184, 94, 73, 0.12);
+  --warn: #b78a4a;
+  --coffee: #45525c;
+  --shadow: 0 6px 18px rgba(30, 45, 60, 0.08);
+}
+
+[data-palette="slate"][data-theme="dark"] {
+  --bg: #131a1f;
+  --bg-deep: #1c242a;
+  --surface: #1f272d;
+  --surface-2: #1c242a;
+
+  --ink: #e6ecf0;
+  --ink-soft: #bcc6cc;
+  --muted: #8f9aa1;
+
+  --line: #2f3c44;
+  --line-strong: #43525c;
+
+  --accent: #7b8f9e;
+  --accent-dark: #607080;
+  --accent-soft: rgba(123, 143, 158, 0.18);
+  --accent-text: #ffffff;
+
+  --good: #7d9a8a;
+  --good-soft: rgba(125, 154, 138, 0.18);
+  --bad: #c56a54;
+  --bad-soft: rgba(197, 106, 84, 0.18);
+  --warn: #cba363;
+  --coffee: #8fa2b0;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* -------- 2.7 MONO -------- */
+[data-palette="mono"] {
+  --bg: #f5f5f5;
+  --bg-deep: #e5e5e5;
+  --surface: #fefefe;
+  --surface-2: #e5e5e5;
+
+  --ink: #111111;
+  --ink-soft: #333333;
+  --muted: #777777;
+
+  --line: #d0d0d0;
+  --line-strong: #a8a8a8;
+
+  --accent: #333333;
+  --accent-dark: #111111;
+  --accent-soft: rgba(0, 0, 0, 0.08);
+  --accent-text: #ffffff;
+
+  --good: #4a6b4a;
+  --good-soft: rgba(74, 107, 74, 0.14);
+  --bad: #8a3a3a;
+  --bad-soft: rgba(138, 58, 58, 0.12);
+  --warn: #8a6a2a;
+  --coffee: #444444;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+[data-palette="mono"][data-theme="dark"] {
+  --bg: #0d0d0d;
+  --bg-deep: #161616;
+  --surface: #1a1a1a;
+  --surface-2: #161616;
+
+  --ink: #f0f0f0;
+  --ink-soft: #c8c8c8;
+  --muted: #8a8a8a;
+
+  --line: #2a2a2a;
+  --line-strong: #404040;
+
+  --accent: #e0e0e0;
+  --accent-dark: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.12);
+  --accent-text: #111111;
+
+  --good: #7da67d;
+  --good-soft: rgba(125, 166, 125, 0.18);
+  --bad: #c57575;
+  --bad-soft: rgba(197, 117, 117, 0.18);
+  --warn: #d0b070;
+  --coffee: #cccccc;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+/* -------- 2.8 VIOLET -------- */
+[data-palette="violet"] {
+  --bg: #f1eefa;
+  --bg-deep: #e2dcf3;
+  --surface: #fdfbff;
+  --surface-2: #e2dcf3;
+
+  --ink: #221a33;
+  --ink-soft: #453a5e;
+  --muted: #7a6e94;
+
+  --line: #cec3e5;
+  --line-strong: #a89cd0;
+
+  --accent: #7058a8;
+  --accent-dark: #574286;
+  --accent-soft: rgba(112, 88, 168, 0.12);
+  --accent-text: #f8f4ff;
+
+  --good: #5c7a6c;
+  --good-soft: rgba(92, 122, 108, 0.14);
+  --bad: #b85e49;
+  --bad-soft: rgba(184, 94, 73, 0.12);
+  --warn: #b78a4a;
+  --coffee: #574b7a;
+  --shadow: 0 6px 18px rgba(50, 30, 90, 0.09);
+}
+
+[data-palette="violet"][data-theme="dark"] {
+  --bg: #161224;
+  --bg-deep: #1f1a33;
+  --surface: #241e3a;
+  --surface-2: #1f1a33;
+
+  --ink: #eae4f7;
+  --ink-soft: #c0b5da;
+  --muted: #958ab0;
+
+  --line: #342c4d;
+  --line-strong: #4a3f6a;
+
+  --accent: #9378c9;
+  --accent-dark: #7058a8;
+  --accent-soft: rgba(147, 120, 201, 0.18);
+  --accent-text: #ffffff;
+
+  --good: #8eaa9a;
+  --good-soft: rgba(142, 170, 154, 0.18);
+  --bad: #c56a54;
+  --bad-soft: rgba(197, 106, 84, 0.18);
+  --warn: #cba363;
+  --coffee: #b09ad0;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+
+/* ============================================================
+   3. TYPOGRAPHY & LAYOUT
+   ============================================================ */
+
+.app {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px 15px calc(110px + env(safe-area-inset-bottom));
+  position: relative;
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+  animation: pageIn 0.22s ease;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.greeting {
+  border-left: 3px solid var(--accent);
+  padding-left: 14px;
+  margin-bottom: 24px;
+}
+
+.greeting .eyebrow {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  margin: 0 0 9px;
+}
+
+.greeting h1 {
+  font-size: 30px;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+  font-weight: 900;
+  margin: 0;
+  color: var(--ink);
+}
+
+
+/* ============================================================
+   4. HEADER & NAVIGATION
+   ============================================================ */
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 26px;
+}
+
+.logo {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.logo span {
+  color: var(--accent);
+  margin-left: 1px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transition: border-color 0.2s;
+}
+
+.avatar:hover,
+.avatar.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* ---- bottom nav (3 tabs: Home, History, Settings) ---- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 520px;
+  z-index: 40;
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  padding: 8px 4px calc(10px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: relative;
+}
+
+.nav-item svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.7;
+}
+
+.nav-item.active {
+  color: var(--accent);
+}
+
+.nav-item.active::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  background: var(--accent);
+}
+
+
+/* ============================================================
+   5. BALANCE / HERO CARDS
+   ============================================================ */
+
+.balance-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 21px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.balance-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent);
+}
+
+.balance-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.balance {
+  font-size: 38px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  color: var(--ink);
+  margin-bottom: 23px;
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance.negative {
+  color: var(--bad);
+}
+
+.balance-row {
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.balance-row small {
+  display: block;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.balance-row strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-row strong.add-val {
+  color: var(--good);
+}
+
+.balance-row strong.deduct-val {
+  color: var(--bad);
+}
+
+
+/* ============================================================
+   6. LISTS & TRANSACTION ROWS
+   ============================================================ */
+
+.section {
+  margin-top: 32px;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 9px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  gap: 10px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.section-sub {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.text-button {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 34px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border: 1px dashed var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+}
+
+.empty svg {
+  display: block;
+  margin: 0 auto 10px;
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.4;
+  color: var(--muted);
+}
+
+.list {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Date group header inside History */
+.date-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+.date-group-header span:last-child {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tx-item:last-child {
+  border-bottom: none;
+}
+
+.tx-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+}
+
+.tx-icon.add {
+  color: var(--good);
+  border-color: var(--good-soft);
+  background: var(--good-soft);
+}
+
+.tx-icon.deduct {
+  color: var(--bad);
+  border-color: var(--bad-soft);
+  background: var(--bad-soft);
+}
+
+.tx-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+.tx-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.tx-top-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.cat-badge {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cat-badge.add {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.cat-badge.deduct {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.tx-note {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
+
+.tx-meta {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tx-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tx-amount {
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tx-amount.add {
+  color: var(--good);
+}
+
+.tx-amount.deduct {
+  color: var(--bad);
+}
+
+.tx-running {
+  font-size: 8.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-delete,
+.row-edit {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border-radius: 4px;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.row-delete:hover,
+.row-edit:hover {
+  color: var(--bad);
+  background: var(--surface-2);
+}
+
+.row-delete svg,
+.row-edit svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.1;
+}
+
+/* ---- search + filter pills ---- */
+.search {
+  width: 100%;
+  height: 43px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 12px;
+  outline: none;
+  font-size: 11px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+
+.search::placeholder {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.search:focus {
+  border-color: var(--accent);
+}
+
+.filters {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 11px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter {
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 3px;
+  padding: 7px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.filter.active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+
+/* ============================================================
+   7. FORMS, MODALS, BUTTONS
+   ============================================================ */
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.action {
+  height: 45px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.action svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+
+.action:hover {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.action.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.action.primary:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  color: var(--accent-text);
+}
+
+.action.add-btn {
+  background: var(--good);
+  color: #ffffff;
+  border-color: var(--good);
+}
+
+.action.add-btn:hover {
+  opacity: 0.92;
+}
+
+/* ---- Category toggle inside modal ---- */
+.category-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.cat-option {
+  height: 44px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.cat-option svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.4;
+}
+
+.cat-option.active-add {
+  background: var(--good);
+  color: #ffffff;
+  border-color: var(--good);
+}
+
+.cat-option.active-deduct {
+  background: var(--bad);
+  color: #ffffff;
+  border-color: var(--bad);
+}
+
+/* ---- Quick note chips ---- */
+.note-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.note-chip {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.note-chip:hover,
+.note-chip:active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ---- overlay + modal ---- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 15, 10, 0.48);
+  z-index: 1000;
+  display: none;
+  align-items: flex-end;
+  padding: 0;
+}
+
+.overlay.show {
+  display: flex;
+}
+
+.modal {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 3px 3px 0 0;
+  border-top: 4px solid var(--accent);
+  padding: 22px 18px calc(26px + env(safe-area-inset-bottom));
+  max-height: 92vh;
+  overflow-y: auto;
+  animation: modalUp 0.22s ease;
+}
+
+@keyframes modalUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.modal h2 {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  margin: 0 0 5px;
+  color: var(--ink);
+}
+
+.modal-description {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 21px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.form-group .label-hint {
+  color: var(--muted);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.input,
+.form-select {
+  width: 100%;
+  height: 45px;
+  border: 1px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 3px;
+  padding: 0 11px;
+  outline: none;
+  font-size: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input:focus,
+.form-select:focus {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.form-select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 50%,
+    calc(100% - 10px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+
+/* ---- money input ---- */
+.money-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  padding: 0 13px;
+  background: var(--surface);
+  transition: border-color 0.2s;
+}
+
+.money-input:focus-within {
+  border-color: var(--accent);
+}
+
+.money-input .prefix {
+  color: var(--accent);
+  margin-right: 6px;
+  font-weight: 900;
+  font-size: 15px;
+}
+
+.money-input input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  width: 100%;
+  font-size: 22px;
+  font-weight: 900;
+  height: 51px;
+  min-width: 0;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-input input::placeholder {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ---- modal actions ---- */
+.modal-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.modal-btn {
+  height: 45px;
+  border-radius: 4px;
+  flex: 1;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 12px;
+}
+
+.modal-btn.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.modal-btn.primary:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+.modal-btn.add-confirm {
+  background: var(--good);
+  color: #ffffff;
+  border-color: var(--good);
+}
+
+.modal-btn.danger {
+  background: var(--bad);
+  color: #ffffff;
+  border-color: var(--bad);
+}
+
+.modal-btn.danger:hover {
+  opacity: 0.9;
+}
+
+/* ---- info box inside modals ---- */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 0;
+  gap: 10px;
+}
+
+.info-row span:first-child {
+  color: var(--muted);
+}
+
+.info-row span:last-child {
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.info-row.warn span:last-child {
+  color: var(--bad);
+}
+
+.info-row.ok span:last-child {
+  color: var(--good);
+}
+
+
+/* ============================================================
+   8. SETTINGS, STATS & TOGGLES
+   ============================================================ */
+
+.setting {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 15px;
+  margin-bottom: 7px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.setting-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.setting-info strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+
+.setting-info span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+  display: block;
+}
+
+.setting input[type="text"],
+.setting input[type="number"],
+.setting select {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 3px;
+  height: 36px;
+  padding: 0 9px;
+  outline: none;
+  max-width: 150px;
+  min-width: 0;
+  font-size: 11px;
+  text-align: right;
+}
+
+.setting input:focus,
+.setting select:focus {
+  border-color: var(--accent);
+}
+
+.danger {
+  color: var(--bad) !important;
+}
+
+.small-btn {
+  flex: 1;
+  min-height: 35px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.small-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---- toggle switch ---- */
+.toggle {
+  width: 40px;
+  height: 22px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg);
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.toggle::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: var(--muted);
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: 0.2s ease;
+  border-radius: 1px;
+}
+
+.toggle.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.toggle.on::after {
+  background: var(--accent-text);
+  left: 21px;
+}
+
+/* ---- theme / palette picker ---- */
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 11px;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.theme-card:active {
+  transform: scale(0.98);
+}
+
+.theme-card:hover {
+  border-color: var(--line-strong);
+}
+
+.theme-card.active {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--accent), 0 3px 10px var(--accent-soft);
+}
+
+.theme-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.theme-swatches {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.theme-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .theme-dot {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.theme-check {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.theme-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.theme-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.theme-desc {
+  font-size: 8.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+/* ---- stat cards ---- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.stat {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 15px;
+  overflow: hidden;
+}
+
+.stat::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 25px;
+  height: 3px;
+  background: var(--accent);
+}
+
+.stat.good::before {
+  background: var(--good);
+}
+
+.stat.bad::before {
+  background: var(--bad);
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 9px;
+}
+
+.stat-value {
+  color: var(--ink);
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-value.add-val {
+  color: var(--good);
+}
+
+.stat-value.deduct-val {
+  color: var(--bad);
+}
+
+/* ---- backup reminder chip ---- */
+.backup-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--good);
+  border-radius: 3px;
+  margin-bottom: 7px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.backup-chip.warn {
+  border-left-color: var(--warn);
+}
+
+.backup-chip.bad {
+  border-left-color: var(--bad);
+}
+
+.backup-chip strong {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.backup-chip button {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   9. PIN LOCK SCREEN
+   ============================================================ */
+
+.pin-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px calc(30px + env(safe-area-inset-bottom));
+}
+
+.pin-lock.show {
+  display: flex;
+}
+
+.pin-lock-inner {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pin-logo {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.pin-logo span {
+  color: var(--accent);
+}
+
+.pin-hint {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.pin-hint.error {
+  color: var(--bad);
+}
+
+.pin-dots {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 36px;
+  min-height: 18px;
+}
+
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pin-shake {
+  animation: pinShake 0.4s ease;
+}
+
+@keyframes pinShake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-6px); }
+  80%      { transform: translateX(6px); }
+}
+
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.pin-key {
+  height: 60px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pin-key:active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.pin-key svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
+}
+
+.pin-forgot,
+.pin-cancel {
+  margin-top: 32px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pin-forgot:hover {
+  color: var(--bad);
+}
+
+
+/* ============================================================
+   10. TOAST & STORAGE BANNER & ACCESSIBILITY
+   ============================================================ */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 20px);
+  z-index: 1100;
+
+  background: var(--ink);
+  color: var(--bg);
+
+  padding: 11px 15px;
+  border-radius: 3px;
+
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+
+  max-width: 90vw;
+  text-align: center;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.storage-banner {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 0;
+  right: 0;
+  z-index: 998;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.storage-banner[hidden] {
+  display: none;
+}
+
+.storage-banner span {
+  flex: 1 1 200px;
+}
+
+.storage-banner button {
+  padding: 6px 12px;
+  min-height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+}
+
+button:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[role="switch"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.modal:focus {
+  outline: none;
+}
+
+@media (min-width: 700px) {
+  body {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+    min-height: 100vh;
+  }
+
+  .app {
+    padding-top: 32px;
+  }
+
+  .bottom-nav {
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    border-radius: 3px 3px 0 0;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Storage problems (read failed / save failed). Hidden until needed. -->
+<div class="storage-banner" id="storageBanner" role="alert" hidden>
+  <span id="storageBannerText"></span>
+  <button type="button" id="storageBannerExport">Export backup</button>
+  <button type="button" id="storageBannerAction">Reload</button>
+</div>
+
+<!-- ============================================================
+     PIN LOCK SCREEN
+     ============================================================ -->
+<div class="pin-lock" id="pinLock" role="dialog" aria-modal="true" aria-label="App lock" aria-hidden="true">
+  <div class="pin-lock-inner">
+    <div class="pin-logo">onhand<span>.</span></div>
+    <div class="pin-hint" id="pinHint">Enter your PIN</div>
+    <div class="pin-dots" id="pinDots"></div>
+    <div class="pin-pad" id="pinPad"></div>
+    <button class="pin-cancel" id="pinCancel" type="button" hidden>
+      Cancel
+    </button>
+    <button class="pin-forgot" id="pinForgot" type="button">
+      Forgot PIN? Reset app
+    </button>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div class="app" id="appRoot">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">onhand<span>.</span></div>
+    <button class="avatar" id="avatarBtn" type="button" aria-label="Settings" onclick="navigate('settings')">
+      <span id="avatarText">U</span>
+    </button>
+  </header>
+
+
+  <!-- ==========================================================
+       HOME — ACTUAL CASH ON HAND & QUICK TRACKER
+       ========================================================== -->
+  <section class="page active" id="homePage">
+
+    <div class="greeting">
+      <p class="eyebrow" id="greetingText">Good morning</p>
+      <h1>Actual cash<br>on hand.</h1>
+    </div>
+
+    <!-- Hero Cash on Hand Balance Card -->
+    <div class="balance-card">
+      <div class="balance-label">Actual Cash on Hand</div>
+      <div class="balance" id="cashOnHandBalance">₱0</div>
+      <div class="balance-row">
+        <div>
+          <small>Total Added (Add)</small>
+          <strong class="add-val" id="totalAddedValue">+₱0</strong>
+        </div>
+        <div style="text-align:right">
+          <small>Total Expenses (Deduct)</small>
+          <strong class="deduct-val" id="totalDeductedValue">-₱0</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Primary Actions: Add Cash & Add Expense -->
+    <div class="quick-actions">
+      <button class="action add-btn" type="button" onclick="openTransactionModal('Add')">
+        <span data-icon="plus"></span>
+        Add Cash
+      </button>
+      <button class="action primary" type="button" onclick="openTransactionModal('Deduct')">
+        <span data-icon="minus"></span>
+        Add Expense
+      </button>
+    </div>
+
+    <!-- Quick Overview Stats -->
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Overview</div>
+          <div class="section-sub">Cash flow summary</div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat good">
+          <div class="stat-label">Added Today</div>
+          <div class="stat-value add-val" id="statTodayAdded">₱0</div>
+        </div>
+        <div class="stat bad">
+          <div class="stat-label">Deducted Today</div>
+          <div class="stat-value deduct-val" id="statTodayDeducted">₱0</div>
+        </div>
+        <div class="stat good">
+          <div class="stat-label">Added This Month</div>
+          <div class="stat-value" id="statMonthAdded">₱0</div>
+        </div>
+        <div class="stat bad">
+          <div class="stat-label">Deducted This Month</div>
+          <div class="stat-value" id="statMonthDeducted">₱0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions Preview -->
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Recent activity</div>
+          <div class="section-sub" id="recentSubText">Latest transactions</div>
+        </div>
+        <button class="text-button" type="button" onclick="navigate('history')">
+          View History →
+        </button>
+      </div>
+      <div class="list" id="recentTransactionsList"></div>
+    </div>
+
+  </section>
+
+
+  <!-- ==========================================================
+       HISTORY — ALL TRANSACTIONS, AMOUNTS, CATEGORIES, NOTES, DATES
+       ========================================================== -->
+  <section class="page" id="historyPage">
+
+    <div class="greeting">
+      <p class="eyebrow">History / Records</p>
+      <h1>Where your<br>money goes.</h1>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-label">Remaining Cash Balance</div>
+      <div class="balance" id="historyCashBalance">₱0</div>
+      <div class="balance-row">
+        <div>
+          <small>Category: Add</small>
+          <strong class="add-val" id="historyTotalAdd">+₱0</strong>
+        </div>
+        <div style="text-align:center">
+          <small>Category: Deduct</small>
+          <strong class="deduct-val" id="historyTotalDeduct">-₱0</strong>
+        </div>
+        <div style="text-align:right">
+          <small>Records</small>
+          <strong id="historyRecordCount">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-actions" style="margin-bottom: 24px;">
+      <button class="action add-btn" type="button" onclick="openTransactionModal('Add')">
+        <span data-icon="plus"></span>
+        Add Cash
+      </button>
+      <button class="action primary" type="button" onclick="openTransactionModal('Deduct')">
+        <span data-icon="minus"></span>
+        Add Expense
+      </button>
+    </div>
+
+    <div class="section" style="margin-top: 0;">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Transaction History</div>
+          <div class="section-sub">Amounts, categories, notes &amp; dates</div>
+        </div>
+      </div>
+
+      <input
+        class="search"
+        id="historySearch"
+        aria-label="Search transaction notes"
+        placeholder="Search notes, amounts, or dates..."
+        oninput="renderHistoryPage()"
+      >
+
+      <div class="filters">
+        <button class="filter active" data-filter="all"    type="button" onclick="setHistoryFilter('all', this)">All</button>
+        <button class="filter"        data-filter="Add"    type="button" onclick="setHistoryFilter('Add', this)">Category: Add</button>
+        <button class="filter"        data-filter="Deduct" type="button" onclick="setHistoryFilter('Deduct', this)">Category: Deduct</button>
+      </div>
+
+      <div class="list" id="allHistoryList"></div>
+    </div>
+
+  </section>
+
+
+  <!-- ==========================================================
+       SETTINGS — THEME, CURRENCY, PIN, DATABASE & BACKUP
+       ========================================================== -->
+  <section class="page" id="settingsPage">
+
+    <div class="greeting">
+      <p class="eyebrow">Settings</p>
+      <h1>Make it<br>yours.</h1>
+    </div>
+
+    <!-- PWA Install Card (shown when browser offers installation) -->
+    <div class="setting" id="installAppRow" hidden>
+      <div class="setting-row">
+        <div class="setting-info">
+          <strong>Install OnHand App</strong>
+          <span>Add to your home screen for offline use</span>
+        </div>
+        <button class="small-btn" style="flex:0 0 auto;padding:0 13px;border-color:var(--accent);color:var(--accent);" type="button" onclick="triggerInstallPWA()">
+          Install
+        </button>
+      </div>
+    </div>
+
+    <!-- Your name -->
+    <div class="setting">
+      <div class="setting-row">
+        <div class="setting-info">
+          <strong>Your name</strong>
+          <span>Used on your greeting</span>
+        </div>
+        <input
+          type="text"
+          id="nameInput"
+          aria-label="Your name"
+          placeholder="Your name"
+          onchange="saveSettings()"
+        >
+      </div>
+    </div>
+
+    <!-- Currency -->
+    <div class="setting">
+      <div class="setting-row">
+        <div class="setting-info">
+          <strong>Currency</strong>
+          <span>Display currency symbol</span>
+        </div>
+        <select id="currencyInput" aria-label="Currency" onchange="saveSettings()">
+          <option value="₱">PHP ₱</option>
+          <option value="$">USD $</option>
+          <option value="€">EUR €</option>
+          <option value="£">GBP £</option>
+          <option value="¥">JPY ¥</option>
+          <option value="₩">KRW ₩</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Palette -->
+    <div class="setting">
+      <div class="setting-info" style="margin-bottom:8px">
+        <strong>Color theme</strong>
+        <span>Pick an aesthetic palette</span>
+      </div>
+      <div class="palette-grid" id="paletteGrid"></div>
+    </div>
+
+    <!-- Dark mode -->
+    <div class="setting">
+      <div class="setting-row">
+        <div class="setting-info">
+          <strong>Dark mode</strong>
+          <span>Change appearance</span>
+        </div>
+        <button
+          class="toggle"
+          id="themeToggle"
+          type="button"
+          role="switch"
+          aria-checked="false"
+          aria-label="Dark mode"
+          onclick="toggleTheme()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- PIN -->
+    <div class="setting">
+      <div class="setting-row">
+        <div class="setting-info">
+          <strong>App PIN</strong>
+          <span id="pinStatusText">No PIN set</span>
+        </div>
+        <button
+          class="toggle"
+          id="pinToggle"
+          type="button"
+          role="switch"
+          aria-checked="false"
+          aria-label="App PIN"
+          onclick="togglePin()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Database & Records Status -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Database &amp; Records</div>
+      </div>
+      <div class="setting">
+        <div class="setting-info">
+          <strong id="dbStatusTitle">Local Database Active (IndexedDB)</strong>
+          <span id="dbStatusDesc">All records are automatically saved on your device.</span>
+        </div>
+      </div>
+      <div class="stats-grid" style="margin-top:7px;">
+        <div class="stat">
+          <div class="stat-label">Cash on Hand</div>
+          <div class="stat-value" id="statSettingBalance">₱0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Saved Records</div>
+          <div class="stat-value" id="statSettingCount">0</div>
+        </div>
+        <div class="stat good">
+          <div class="stat-label">Total Added</div>
+          <div class="stat-value add-val" id="statSettingAdded">₱0</div>
+        </div>
+        <div class="stat bad">
+          <div class="stat-label">Total Deducted</div>
+          <div class="stat-value deduct-val" id="statSettingDeducted">₱0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backup & Export -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Backup &amp; Export</div>
+      </div>
+
+      <div class="backup-chip" id="backupChip">
+        <div>
+          Last backup: <strong id="lastBackupText">never</strong>
+        </div>
+        <button type="button" onclick="exportData()">Export now</button>
+      </div>
+
+      <div class="setting">
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>Export JSON backup</strong>
+            <span>Download full database file to restore anytime</span>
+          </div>
+          <button class="small-btn"
+                  style="flex:0 0 auto;padding:0 13px"
+                  type="button"
+                  onclick="exportData()">
+            Export JSON
+          </button>
+        </div>
+      </div>
+
+      <div class="setting">
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>Export CSV spreadsheet</strong>
+            <span>Open transaction history in Excel or Sheets</span>
+          </div>
+          <button class="small-btn"
+                  style="flex:0 0 auto;padding:0 13px"
+                  type="button"
+                  onclick="exportCSV()">
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="setting">
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>Import backup</strong>
+            <span>Restore records from a JSON backup file</span>
+          </div>
+          <button class="small-btn"
+                  style="flex:0 0 auto;padding:0 13px"
+                  type="button"
+                  onclick="document.getElementById('importFile').click()">
+            Import
+          </button>
+        </div>
+      </div>
+
+      <input
+        type="file"
+        id="importFile"
+        accept=".json,application/json"
+        style="display:none"
+        onchange="importData(event)"
+      >
+
+      <div class="setting" id="undoImportRow" hidden>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>Undo last import</strong>
+            <span>Restore the data you had before the import</span>
+          </div>
+          <button class="small-btn"
+                  style="flex:0 0 auto;padding:0 13px"
+                  type="button"
+                  onclick="undoImport()">
+            Undo
+          </button>
+        </div>
+      </div>
+
+      <div class="setting">
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong class="danger">Reset everything</strong>
+            <span>Permanently delete all local records</span>
+          </div>
+          <button class="small-btn"
+                  style="flex:0 0 auto;color:var(--bad);border-color:var(--bad);"
+                  type="button"
+                  onclick="resetData()">
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">About</div>
+      </div>
+      <div class="setting">
+        <div class="setting-info">
+          <strong>OnHand</strong>
+          <span>
+            Offline-first actual cash on hand &amp; expense tracker PWA.
+            Track upfront work/store expenses, reimbursements, and remaining cash balance.
+            All records stay safely on this device in your local database.
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+
+
+<!-- ============================================================
+     BOTTOM NAVIGATION
+     ============================================================ -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="home"     type="button" aria-current="page" onclick="navigate('home')">
+    <span data-icon="wallet"></span>
+    Cash on Hand
+  </button>
+  <button class="nav-item"        data-page="history"  type="button" onclick="navigate('history')">
+    <span data-icon="receipt"></span>
+    History
+  </button>
+  <button class="nav-item"        data-page="settings" type="button" onclick="navigate('settings')">
+    <span data-icon="settings"></span>
+    Settings
+  </button>
+</nav>
+
+
+<!-- ============================================================
+     MODAL CONTAINER
+     ============================================================ -->
+<div class="overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modalContent" role="dialog" aria-modal="true" tabindex="-1"></div>
+</div>
+
+
+<!-- ============================================================
+     TOAST
+     ============================================================ -->
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">Saved</div>
+
+<script>
+/* ============================================================
+   OnHand — Cash on Hand & Expense Tracker PWA
+   Offline-first with IndexedDB + localStorage Mirror Database
+   ============================================================ */
+
+/* ============================================================
+   1. ICONS
+   ============================================================ */
+
+const ICONS = {
+  wallet:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14v4"/><path d="M3 7v10a2 2 0 0 0 2 2h15v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>',
+
+  receipt:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+
+  settings:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+
+  plus:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+
+  minus:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>',
+
+  close:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+
+  check:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+
+  edit:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+
+  'arrow-up':
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>',
+
+  'arrow-down':
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5 12 7 7 7-7"/></svg>',
+
+  backspace:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m18 9-6 6M12 9l6 6"/></svg>',
+
+  'empty-search':
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+
+  'empty-receipt':
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+
+  'empty-wallet':
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14v4"/><path d="M3 7v10a2 2 0 0 0 2 2h15v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>'
+};
+
+function paintIcons(root) {
+  (root || document)
+    .querySelectorAll("[data-icon]")
+    .forEach(el => {
+      const name = el.getAttribute("data-icon");
+      if (ICONS[name]) el.innerHTML = ICONS[name];
+    });
+}
+
+
+/* ============================================================
+   2. STORAGE LAYER — IndexedDB + LocalStorage Mirror
+   ============================================================ */
+
+const DB_NAME         = "onhand-db";
+const DB_VERSION      = 1;
+const STORE_NAME      = "app";
+const STATE_KEY       = "state";
+const THEME_CACHE_KEY = "onhand_theme_cache";
+const PRE_IMPORT_KEY  = "preImport";
+const LS_MIRROR_KEY   = "onhand_state_mirror_v1";
+
+let _db = null;
+
+function openDB() {
+  if (_db) return Promise.resolve(_db);
+
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+
+    req.onsuccess = () => {
+      _db = req.result;
+      _db.onversionchange = () => {
+        try { _db.close(); } catch (e) { /* ignore */ }
+        _db = null;
+      };
+      _db.onclose = () => { _db = null; };
+      resolve(_db);
+    };
+
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function readState(key = STATE_KEY) {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const req = tx.objectStore(STORE_NAME).get(key);
+
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+async function writeState(state, key = STATE_KEY) {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    let tx;
+    try {
+      tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).put(state, key);
+    } catch (e) {
+      reject(e);
+      return;
+    }
+
+    tx.oncomplete = () => resolve();
+    tx.onerror    = () => reject(tx.error);
+    tx.onabort    = () => reject(tx.error || new Error("Transaction aborted"));
+  });
+}
+
+async function clearState(key = STATE_KEY) {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    let tx;
+    try {
+      tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).delete(key);
+    } catch (e) {
+      reject(e);
+      return;
+    }
+
+    tx.oncomplete = () => resolve();
+    tx.onerror    = () => reject(tx.error);
+    tx.onabort    = () => reject(tx.error || new Error("Transaction aborted"));
+  });
+}
+
+function writeMirror(state) {
+  try {
+    localStorage.setItem(LS_MIRROR_KEY, JSON.stringify(state));
+  } catch (e) { /* ignore quota or private mode errors */ }
+}
+
+function readMirror() {
+  try {
+    const raw = localStorage.getItem(LS_MIRROR_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function wipeMirror() {
+  try {
+    localStorage.removeItem(LS_MIRROR_KEY);
+    localStorage.removeItem(THEME_CACHE_KEY);
+  } catch (e) { /* ignore */ }
+}
+
+
+/* ============================================================
+   3. DATA SCHEMA & NORMALIZATION
+   ============================================================ */
+
+const PALETTES = [
+  {
+    key: "coffee",
+    name: "Warm Paper",
+    desc: "Parchment & Terracotta",
+    swatch: "#b85e49",
+    light: { bg: "#f5efe3", surface: "#fffdf8", accent: "#b85e49" },
+    dark:  { bg: "#211c18", surface: "#302923", accent: "#c56a54" }
+  },
+  {
+    key: "midnight",
+    name: "OLED Midnight",
+    desc: "Pitch Black & Neon",
+    swatch: "#00e599",
+    light: { bg: "#eaf1ec", surface: "#f7fbf8", accent: "#008f5d" },
+    dark:  { bg: "#000000", surface: "#101513", accent: "#00e599" }
+  },
+  {
+    key: "forest",
+    name: "Matcha Forest",
+    desc: "Sage & Organic Ivory",
+    swatch: "#5c8a5c",
+    light: { bg: "#eef2ea", surface: "#fbfff7", accent: "#5c8a5c" },
+    dark:  { bg: "#161c14", surface: "#222b1f", accent: "#78a878" }
+  },
+  {
+    key: "ocean",
+    name: "Ocean Navy",
+    desc: "Twilight Blue & Cyan",
+    swatch: "#4a8fa8",
+    light: { bg: "#eef4f5", surface: "#faffff", accent: "#4a8fa8" },
+    dark:  { bg: "#131e22", surface: "#1e2d33", accent: "#5fa3bb" }
+  },
+  {
+    key: "plum",
+    name: "Sakura Rose",
+    desc: "Blush Stone & Plum",
+    swatch: "#8b5a7d",
+    light: { bg: "#f5eef2", surface: "#fffbff", accent: "#8b5a7d" },
+    dark:  { bg: "#1d1419", surface: "#2d2029", accent: "#a878a0" }
+  },
+  {
+    key: "slate",
+    name: "Nordic Slate",
+    desc: "Cool Mist & Steel Gray",
+    swatch: "#607080",
+    light: { bg: "#eef1f3", surface: "#fbfdfe", accent: "#607080" },
+    dark:  { bg: "#131a1f", surface: "#1f272d", accent: "#7b8f9e" }
+  },
+  {
+    key: "mono",
+    name: "Monochrome",
+    desc: "Stark Ink & Paper",
+    swatch: "#333333",
+    light: { bg: "#f5f5f5", surface: "#fefefe", accent: "#333333" },
+    dark:  { bg: "#0d0d0d", surface: "#1a1a1a", accent: "#e0e0e0" }
+  },
+  {
+    key: "violet",
+    name: "Electric Violet",
+    desc: "Amethyst & Lavender",
+    swatch: "#7058a8",
+    light: { bg: "#f1eefa", surface: "#fdfbff", accent: "#7058a8" },
+    dark:  { bg: "#161224", surface: "#241e3a", accent: "#9378c9" }
+  }
+];
+
+const QUICK_NOTES_ADD = [
+  "Cash on hand",
+  "Store reimbursement",
+  "ATM withdrawal",
+  "Starting cash"
+];
+
+const QUICK_NOTES_DEDUCT = [
+  "Store expense (to reimburse)",
+  "Store supplies",
+  "Delivery / Gas",
+  "Food / Lunch"
+];
+
+function uid() {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch (e) { /* ignore */ }
+
+  return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+
+function sanitizeId(id) {
+  if (!id) return uid();
+  const clean = String(id).replace(/[^a-zA-Z0-9_-]/g, "");
+  return clean || uid();
+}
+
+function round2(value) {
+  const n = Number(value);
+  if (!isFinite(n)) return 0;
+
+  const r = Math.round((Math.abs(n) + Number.EPSILON) * 100) / 100;
+  if (!isFinite(r)) return 0;
+
+  return n < 0 && r !== 0 ? -r : r;
+}
+
+function defaultData() {
+  return {
+    settings: {
+      name: "",
+      currency: "₱",
+      theme: "light",
+      palette: "coffee",
+      pinHash: "",
+      lastBackupAt: ""
+    },
+    records: []
+  };
+}
+
+function normalizeCategory(cat) {
+  if (typeof cat === "string") {
+    const lower = cat.trim().toLowerCase();
+    if (lower === "deduct" || lower === "expense" || lower === "withdraw") {
+      return "Deduct";
+    }
+  }
+  return "Add";
+}
+
+function normalizeData(raw) {
+  raw = (raw && typeof raw === "object") ? raw : {};
+  const defaults = defaultData();
+
+  const rs = (raw.settings && typeof raw.settings === "object") ? raw.settings : {};
+
+  const settings = {
+    name: typeof rs.name === "string" ? rs.name : defaults.settings.name,
+    currency: ["₱", "$", "€", "£", "¥", "₩"].includes(rs.currency) ? rs.currency : "₱",
+    theme: rs.theme === "dark" ? "dark" : "light",
+    palette: PALETTES.some(p => p.key === rs.palette) ? rs.palette : "coffee",
+    pinHash: typeof rs.pinHash === "string" ? rs.pinHash : "",
+    lastBackupAt: typeof rs.lastBackupAt === "string" ? rs.lastBackupAt : ""
+  };
+
+  const rawRecords = Array.isArray(raw.records)
+    ? raw.records
+    : (Array.isArray(raw.transactions) ? raw.transactions : []);
+
+  const records = rawRecords
+    .filter(r => r && typeof r === "object")
+    .map(r => {
+      const category = normalizeCategory(r.category || r.type);
+      const amount = Math.max(0, round2(r.amount));
+      const note = typeof r.note === "string"
+        ? r.note.trim()
+        : (typeof r.title === "string" ? r.title.trim() : "");
+      const date = (typeof r.date === "string" && !isNaN(new Date(r.date)))
+        ? r.date
+        : new Date().toISOString();
+
+      return {
+        id: sanitizeId(r.id),
+        category,
+        amount,
+        note,
+        date
+      };
+    })
+    .filter(r => r.amount > 0);
+
+  return {
+    settings,
+    records
+  };
+}
+
+
+/* ============================================================
+   4. RUNTIME STATE & DATABASE PERSISTENCE
+   ============================================================ */
+
+let data = defaultData();
+let currentHistoryFilter = "all";
+let hasImportSnapshot = false;
+let _modalCategory = "Add";
+let _deferredInstallPrompt = null;
+
+const storageStatus = { blocked: false, failing: false, persistent: false };
+
+async function loadData() {
+  let stored = null;
+
+  try {
+    stored = await readState();
+  } catch (e) {
+    console.warn("OnHand: IndexedDB read failed, checking mirror", e);
+    const mirror = readMirror();
+    if (mirror && typeof mirror === "object") {
+      return normalizeData(mirror);
+    }
+    storageStatus.blocked = true;
+    return defaultData();
+  }
+
+  if (!stored || typeof stored !== "object") {
+    const mirror = readMirror();
+    if (mirror && typeof mirror === "object") {
+      const normalized = normalizeData(mirror);
+      try {
+        await writeState(normalized);
+      } catch (e) {
+        storageStatus.failing = true;
+      }
+      return normalized;
+    }
+
+    const fresh = defaultData();
+    try {
+      await writeState(fresh);
+      writeMirror(fresh);
+    } catch (e) {
+      console.warn("OnHand: initial write failed", e);
+      storageStatus.failing = true;
+    }
+    return fresh;
+  }
+
+  const normalized = normalizeData(stored);
+  writeMirror(normalized);
+  return normalized;
+}
+
+function refreshStorageBanner() {
+  const banner = document.getElementById("storageBanner");
+  const text   = document.getElementById("storageBannerText");
+  const action = document.getElementById("storageBannerAction");
+  if (!banner || !text || !action) return;
+
+  if (storageStatus.blocked) {
+    text.textContent =
+      "Your saved database couldn't be read, so changes are NOT being " +
+      "saved (this protects what's already stored). Reload to retry.";
+    action.textContent = "Reload";
+    action.onclick = () => location.reload();
+    banner.hidden = false;
+  } else if (storageStatus.failing) {
+    text.textContent =
+      "Couldn't save your latest changes to IndexedDB. Export a backup, then retry.";
+    action.textContent = "Retry";
+    action.onclick = () => saveData();
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+}
+
+function bindStorageBanner() {
+  const exp = document.getElementById("storageBannerExport");
+  if (exp) exp.onclick = () => exportData();
+  refreshStorageBanner();
+}
+
+function saveData() {
+  if (storageStatus.blocked) {
+    refreshStorageBanner();
+    return Promise.resolve(false);
+  }
+
+  writeMirror(data);
+
+  return writeState(data)
+    .then(() => {
+      if (storageStatus.failing) {
+        storageStatus.failing = false;
+        refreshStorageBanner();
+      }
+      return true;
+    })
+    .catch(err => {
+      console.warn("OnHand: could not save to IndexedDB", err);
+      storageStatus.failing = true;
+      refreshStorageBanner();
+      return false;
+    });
+}
+
+
+/* ============================================================
+   5. SHARED HELPERS & DATE FORMATTING
+   ============================================================ */
+
+function currency(amount) {
+  const value = Number(amount) || 0;
+  const sign = value < 0 ? "-" : "";
+
+  return (
+    sign +
+    (data.settings.currency || "₱") +
+    Math.abs(value).toLocaleString("en-US", {
+      minimumFractionDigits: value % 1 !== 0 ? 2 : 0,
+      maximumFractionDigits: 2
+    })
+  );
+}
+
+function escapeHTML(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function showToast(message) {
+  const el = document.getElementById("toast");
+  if (!el) return;
+
+  el.textContent = message;
+  el.classList.add("show");
+
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => {
+    el.classList.remove("show");
+  }, 2200);
+}
+
+function parseDateOnly(value) {
+  if (typeof value === "string") {
+    let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!m) {
+      m = /^(\d{4})-(\d{2})-(\d{2})T00:00:00(?:\.000)?Z$/.exec(value);
+    }
+    if (m) {
+      return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+    }
+  }
+  const d = new Date(value);
+  return isNaN(d) ? null : d;
+}
+
+function localNoonISO(dateStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || "");
+  if (!m) return new Date().toISOString();
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0).toISOString();
+}
+
+function dateInputValue(value) {
+  const d = parseDateOnly(value);
+  if (!d) return todayISO();
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${day}`;
+}
+
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function isFutureDate(dateStr) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateStr || "") && dateStr > todayISO();
+}
+
+function entryDateISO(dateStr, originalIso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || "")) {
+    return originalIso || new Date().toISOString();
+  }
+  if (originalIso && dateInputValue(originalIso) === dateStr) return originalIso;
+  if (dateStr === todayISO()) return new Date().toISOString();
+  return localNoonISO(dateStr);
+}
+
+function formatDate(date) {
+  const d = parseDateOnly(date);
+  if (!d) return "";
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function formatTime(date) {
+  const d = new Date(date);
+  if (isNaN(d)) return "";
+  /* If saved at exact local noon from a past date picker, still show time or clean date */
+  return d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function formatDateGroupLabel(dateKey) {
+  const today = todayISO();
+  if (dateKey === today) return "Today · " + formatDate(dateKey);
+
+  const yest = new Date();
+  yest.setDate(yest.getDate() - 1);
+  const yKey = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, "0")}-${String(yest.getDate()).padStart(2, "0")}`;
+  if (dateKey === yKey) return "Yesterday · " + formatDate(dateKey);
+
+  return formatDate(dateKey);
+}
+
+function showConfirmModal({ title, message, confirmText, isDanger, onConfirm }) {
+  const modal = document.getElementById("modalContent");
+  if (!modal) {
+    if (confirm(message || "Are you sure?")) {
+      if (typeof onConfirm === "function") onConfirm();
+    }
+    return;
+  }
+
+  modal.innerHTML = `
+    <h2>${escapeHTML(title || "Confirm")}</h2>
+    <p class="modal-description" style="white-space:pre-line;line-height:1.5;">${escapeHTML(message || "Are you sure?")}</p>
+    <div class="modal-actions">
+      <button class="modal-btn" type="button" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn ${isDanger ? 'danger' : 'primary'}" type="button" id="confirmModalBtn">
+        ${escapeHTML(confirmText || "Confirm")}
+      </button>
+    </div>
+  `;
+  openModal();
+  document.getElementById("confirmModalBtn")?.addEventListener("click", () => {
+    closeModal();
+    if (typeof onConfirm === "function") onConfirm();
+  });
+}
+
+
+/* ============================================================
+   6. CALCULATIONS — CASH ON HAND, ADD, DEDUCT & RUNNING BALANCE
+   ============================================================ */
+
+function totalAdded() {
+  return round2(
+    data.records
+      .filter(r => r.category === "Add")
+      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+  );
+}
+
+function totalDeducted() {
+  return round2(
+    data.records
+      .filter(r => r.category === "Deduct")
+      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+  );
+}
+
+function cashOnHand() {
+  return round2(totalAdded() - totalDeducted());
+}
+
+function todayStats() {
+  const today = todayISO();
+  let added = 0;
+  let deducted = 0;
+
+  data.records.forEach(r => {
+    if (dateInputValue(r.date) === today) {
+      if (r.category === "Add") added += Number(r.amount) || 0;
+      else deducted += Number(r.amount) || 0;
+    }
+  });
+
+  return {
+    added: round2(added),
+    deducted: round2(deducted)
+  };
+}
+
+function monthStats() {
+  const now = new Date();
+  const m = now.getMonth();
+  const y = now.getFullYear();
+
+  let added = 0;
+  let deducted = 0;
+
+  data.records.forEach(r => {
+    const d = parseDateOnly(r.date);
+    if (d && d.getMonth() === m && d.getFullYear() === y) {
+      if (r.category === "Add") added += Number(r.amount) || 0;
+      else deducted += Number(r.amount) || 0;
+    }
+  });
+
+  return {
+    added: round2(added),
+    deducted: round2(deducted)
+  };
+}
+
+/* Computes a Map of record.id -> running cash balance after that transaction */
+function computeRunningBalances() {
+  const chronological = data.records
+    .slice()
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  let running = 0;
+  const map = new Map();
+
+  chronological.forEach(r => {
+    const amt = Number(r.amount) || 0;
+    if (r.category === "Add") {
+      running = round2(running + amt);
+    } else {
+      running = round2(running - amt);
+    }
+    map.set(r.id, running);
+  });
+
+  return map;
+}
+
+
+/* ============================================================
+   7. RENDER HOME & HISTORY PAGES
+   ============================================================ */
+
+function recordRowHTML(r, runningMap) {
+  const isAdd = r.category === "Add";
+  const sign = isAdd ? "+" : "-";
+  const cls = isAdd ? "add" : "deduct";
+  const iconName = isAdd ? "arrow-down" : "arrow-up";
+
+  const noteText = r.note && r.note.trim()
+    ? r.note.trim()
+    : (isAdd ? "Cash added" : "Expense deducted");
+
+  const runningVal = runningMap ? runningMap.get(r.id) : null;
+  const runningStr = runningVal !== undefined && runningVal !== null
+    ? `Bal: ${currency(runningVal)}`
+    : "";
+
+  const dateTimeStr = `${formatDate(r.date)} · ${formatTime(r.date)}`;
+  const ariaLabel = `${r.category} ${currency(r.amount)} — ${noteText}`;
+
+  return `
+    <div class="tx-item">
+      <div class="tx-icon ${cls}">
+        ${ICONS[iconName]}
+      </div>
+      <div class="tx-body">
+        <div class="tx-top-line">
+          <span class="cat-badge ${cls}">${escapeHTML(r.category)}</span>
+        </div>
+        <div class="tx-note">${escapeHTML(noteText)}</div>
+        <div class="tx-meta">${escapeHTML(dateTimeStr)}</div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-amount ${cls}">${sign}${currency(r.amount)}</div>
+        ${runningStr ? `<div class="tx-running">${escapeHTML(runningStr)}</div>` : ""}
+      </div>
+      <button
+        class="row-edit"
+        type="button"
+        aria-label="Edit ${escapeHTML(ariaLabel)}"
+        onclick="openTransactionModal('${r.category}', '${r.id}')">
+        ${ICONS.edit}
+      </button>
+      <button
+        class="row-delete"
+        type="button"
+        aria-label="Delete ${escapeHTML(ariaLabel)}"
+        onclick="deleteRecord('${r.id}')">
+        ${ICONS.close}
+      </button>
+    </div>
+  `;
+}
+
+function renderHomePage() {
+  const hour = new Date().getHours();
+  let greeting = "Good evening";
+  if (hour < 12) greeting = "Good morning";
+  else if (hour < 18) greeting = "Good afternoon";
+
+  const greetEl = document.getElementById("greetingText");
+  if (greetEl) {
+    greetEl.textContent = greeting + (data.settings.name ? ", " + data.settings.name : "");
+  }
+
+  const initials = (data.settings.name || "U")
+    .trim()
+    .split(/\s+/)
+    .map(x => x[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const avatarEl = document.getElementById("avatarText");
+  if (avatarEl) avatarEl.textContent = initials || "U";
+
+  const bal = cashOnHand();
+  const added = totalAdded();
+  const deducted = totalDeducted();
+
+  const balEl = document.getElementById("cashOnHandBalance");
+  if (balEl) {
+    balEl.textContent = currency(bal);
+    balEl.classList.toggle("negative", bal < 0);
+  }
+
+  const addEl = document.getElementById("totalAddedValue");
+  if (addEl) addEl.textContent = "+" + currency(added);
+
+  const dedEl = document.getElementById("totalDeductedValue");
+  if (dedEl) dedEl.textContent = "-" + currency(deducted);
+
+  const tStats = todayStats();
+  const mStats = monthStats();
+
+  const stAdd = document.getElementById("statTodayAdded");
+  if (stAdd) stAdd.textContent = "+" + currency(tStats.added);
+
+  const stDed = document.getElementById("statTodayDeducted");
+  if (stDed) stDed.textContent = "-" + currency(tStats.deducted);
+
+  const smAdd = document.getElementById("statMonthAdded");
+  if (smAdd) smAdd.textContent = "+" + currency(mStats.added);
+
+  const smDed = document.getElementById("statMonthDeducted");
+  if (smDed) smDed.textContent = "-" + currency(mStats.deducted);
+
+  const subEl = document.getElementById("recentSubText");
+  if (subEl) {
+    subEl.textContent = data.records.length
+      ? `Showing latest of ${data.records.length} record${data.records.length === 1 ? "" : "s"}`
+      : "No records yet";
+  }
+
+  const recentContainer = document.getElementById("recentTransactionsList");
+  if (!recentContainer) return;
+
+  if (!data.records.length) {
+    recentContainer.innerHTML = `
+      <div class="empty">
+        ${ICONS["empty-wallet"]}
+        No transactions yet. Tap "Add Cash" or "Add Expense" above to start tracking.
+      </div>
+    `;
+    return;
+  }
+
+  const runningMap = computeRunningBalances();
+  const latest = data.records
+    .slice()
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
+
+  recentContainer.innerHTML = latest.map(r => recordRowHTML(r, runningMap)).join("");
+}
+
+function renderHistoryPage() {
+  const bal = cashOnHand();
+  const added = totalAdded();
+  const deducted = totalDeducted();
+
+  const balEl = document.getElementById("historyCashBalance");
+  if (balEl) {
+    balEl.textContent = currency(bal);
+    balEl.classList.toggle("negative", bal < 0);
+  }
+
+  const addEl = document.getElementById("historyTotalAdd");
+  if (addEl) addEl.textContent = "+" + currency(added);
+
+  const dedEl = document.getElementById("historyTotalDeduct");
+  if (dedEl) dedEl.textContent = "-" + currency(deducted);
+
+  const cntEl = document.getElementById("historyRecordCount");
+  if (cntEl) cntEl.textContent = String(data.records.length);
+
+  const container = document.getElementById("allHistoryList");
+  if (!container) return;
+
+  const search = (document.getElementById("historySearch")?.value || "")
+    .trim()
+    .toLowerCase();
+
+  const runningMap = computeRunningBalances();
+
+  const filtered = data.records
+    .filter(r => {
+      const okFilter = currentHistoryFilter === "all" || r.category === currentHistoryFilter;
+      if (!okFilter) return false;
+      if (!search) return true;
+
+      const noteMatch = String(r.note || "").toLowerCase().includes(search);
+      const catMatch = String(r.category || "").toLowerCase().includes(search);
+      const amtMatch = String(r.amount || "").includes(search) || currency(r.amount).toLowerCase().includes(search);
+      const dateMatch = formatDate(r.date).toLowerCase().includes(search);
+      return noteMatch || catMatch || amtMatch || dateMatch;
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="empty">
+        ${data.records.length ? ICONS["empty-search"] : ICONS["empty-receipt"]}
+        ${
+          data.records.length
+            ? "No matching records found."
+            : "No transaction history yet."
+        }
+      </div>
+    `;
+    return;
+  }
+
+  /* Group by calendar date for clear reading */
+  const groups = [];
+  const groupMap = new Map();
+
+  filtered.forEach(r => {
+    const dKey = dateInputValue(r.date);
+    if (!groupMap.has(dKey)) {
+      const g = { dateKey: dKey, items: [], net: 0 };
+      groupMap.set(dKey, g);
+      groups.push(g);
+    }
+    const g = groupMap.get(dKey);
+    g.items.push(r);
+    g.net = round2(g.net + (r.category === "Add" ? r.amount : -r.amount));
+  });
+
+  let html = "";
+  groups.forEach(g => {
+    const netSign = g.net > 0 ? "+" : "";
+    html += `
+      <div class="date-group-header">
+        <span>${escapeHTML(formatDateGroupLabel(g.dateKey))}</span>
+        <span>${netSign}${currency(g.net)}</span>
+      </div>
+      ${g.items.map(r => recordRowHTML(r, runningMap)).join("")}
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function setHistoryFilter(filter, button) {
+  currentHistoryFilter = filter;
+
+  document.querySelectorAll(".filter[data-filter]").forEach(el => {
+    el.classList.remove("active");
+  });
+
+  if (button) button.classList.add("active");
+
+  syncPressed();
+  renderHistoryPage();
+}
+
+
+/* ============================================================
+   8. ADD CASH / ADD EXPENSE MODAL
+   ============================================================ */
+
+function selectModalCategory(cat, editingId) {
+  _modalCategory = cat === "Deduct" ? "Deduct" : "Add";
+  const isAdd = _modalCategory === "Add";
+
+  const btnAdd = document.getElementById("catBtnAdd");
+  const btnDed = document.getElementById("catBtnDeduct");
+  if (btnAdd) {
+    btnAdd.className = "cat-option" + (isAdd ? " active-add" : "");
+    btnAdd.setAttribute("aria-pressed", String(isAdd));
+  }
+  if (btnDed) {
+    btnDed.className = "cat-option" + (!isAdd ? " active-deduct" : "");
+    btnDed.setAttribute("aria-pressed", String(!isAdd));
+  }
+
+  const titleEl = document.getElementById("modalTitle");
+  if (titleEl) {
+    titleEl.textContent = editingId
+      ? (isAdd ? "Edit Cash Addition" : "Edit Expense Deduction")
+      : (isAdd ? "Add Cash" : "Add Expense");
+  }
+
+  const descEl = document.getElementById("txModalDesc");
+  if (descEl) {
+    descEl.textContent = isAdd
+      ? "Increase your actual cash on hand."
+      : "Automatically deduct this expense from your cash balance.";
+  }
+
+  const noteInput = document.getElementById("txNote");
+  if (noteInput) {
+    noteInput.placeholder = isAdd
+      ? "e.g. Store reimbursement, Cash float, ATM..."
+      : "e.g. Store supplies upfront, Lunch, Gas...";
+  }
+
+  const chipsWrap = document.getElementById("txQuickChips");
+  if (chipsWrap) {
+    const list = isAdd ? QUICK_NOTES_ADD : QUICK_NOTES_DEDUCT;
+    chipsWrap.innerHTML = list.map(chip => `
+      <button class="note-chip" type="button" onclick="fillQuickNote('${escapeHTML(chip)}')">
+        + ${escapeHTML(chip)}
+      </button>
+    `).join("");
+  }
+
+  const saveBtn = document.getElementById("txSaveBtn");
+  if (saveBtn) {
+    saveBtn.textContent = editingId
+      ? "Save changes"
+      : (isAdd ? "Add Cash" : "Deduct Expense");
+    saveBtn.className = "modal-btn " + (isAdd ? "add-confirm" : "primary");
+  }
+
+  updateModalBalancePreview(editingId);
+}
+
+function fillQuickNote(text) {
+  const input = document.getElementById("txNote");
+  if (!input) return;
+  input.value = text;
+  input.focus();
+}
+
+function updateModalBalancePreview(editingId) {
+  const amountEl = document.getElementById("txAmount");
+  const deltaEl  = document.getElementById("previewDelta");
+  const afterEl  = document.getElementById("previewAfter");
+  const afterRow = document.getElementById("previewAfterRow");
+  if (!amountEl || !deltaEl || !afterEl || !afterRow) return;
+
+  const existing = editingId ? data.records.find(r => r.id === editingId) : null;
+  let baseBalance = cashOnHand();
+
+  /* If editing, remove the old transaction's effect first so preview is accurate */
+  if (existing) {
+    const oldAmt = Number(existing.amount) || 0;
+    baseBalance = existing.category === "Add"
+      ? round2(baseBalance - oldAmt)
+      : round2(baseBalance + oldAmt);
+  }
+
+  const entered = Math.max(0, round2(amountEl.value));
+  const isAdd = _modalCategory === "Add";
+  const newBalance = isAdd
+    ? round2(baseBalance + entered)
+    : round2(baseBalance - entered);
+
+  deltaEl.textContent = (isAdd ? "+" : "-") + currency(entered);
+  deltaEl.style.color = isAdd ? "var(--good)" : "var(--bad)";
+
+  afterEl.textContent = currency(newBalance);
+  afterRow.classList.toggle("warn", newBalance < 0);
+  afterRow.classList.toggle("ok", newBalance >= 0);
+}
+
+function openTransactionModal(defaultCat = "Add", id = "") {
+  const editing = Boolean(id);
+  const existing = editing ? data.records.find(r => r.id === id) : null;
+  if (editing && !existing) return;
+
+  _modalCategory = editing
+    ? existing.category
+    : (defaultCat === "Deduct" ? "Deduct" : "Add");
+
+  const isAdd = _modalCategory === "Add";
+
+  let baseBalance = cashOnHand();
+  if (existing) {
+    const oldAmt = Number(existing.amount) || 0;
+    baseBalance = existing.category === "Add"
+      ? round2(baseBalance - oldAmt)
+      : round2(baseBalance + oldAmt);
+  }
+
+  const modal = document.getElementById("modalContent");
+
+  modal.innerHTML = `
+    <h2 id="modalTitle">${
+      editing
+        ? (isAdd ? "Edit Cash Addition" : "Edit Expense Deduction")
+        : (isAdd ? "Add Cash" : "Add Expense")
+    }</h2>
+
+    <p class="modal-description" id="txModalDesc">
+      ${
+        isAdd
+          ? "Increase your actual cash on hand."
+          : "Automatically deduct this expense from your cash balance."
+      }
+    </p>
+
+    <div class="info-box">
+      <div class="info-row">
+        <span>Current cash on hand</span>
+        <span>${currency(baseBalance)}</span>
+      </div>
+      <div class="info-row">
+        <span>Transaction amount</span>
+        <span id="previewDelta">${isAdd ? "+" : "-"}${currency(editing ? existing.amount : 0)}</span>
+      </div>
+      <div class="info-row ok" id="previewAfterRow">
+        <span>Remaining cash balance</span>
+        <span id="previewAfter">${currency(editing ? cashOnHand() : baseBalance)}</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Category <span class="label-hint">Add or Deduct</span></label>
+      <div class="category-selector" role="group" aria-label="Transaction Category">
+        <button
+          id="catBtnAdd"
+          type="button"
+          class="cat-option ${isAdd ? "active-add" : ""}"
+          aria-pressed="${isAdd}"
+          onclick="selectModalCategory('Add', '${editing ? existing.id : ""}')">
+          ${ICONS.plus}
+          Add
+        </button>
+        <button
+          id="catBtnDeduct"
+          type="button"
+          class="cat-option ${!isAdd ? "active-deduct" : ""}"
+          aria-pressed="${!isAdd}"
+          onclick="selectModalCategory('Deduct', '${editing ? existing.id : ""}')">
+          ${ICONS.minus}
+          Deduct
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Amount</label>
+      <div class="money-input">
+        <span class="prefix">${escapeHTML(data.settings.currency)}</span>
+        <input
+          id="txAmount"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="any"
+          placeholder="0"
+          value="${editing ? Number(existing.amount) : ""}"
+          oninput="updateModalBalancePreview('${editing ? existing.id : ""}')"
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Note <span class="label-hint">what was this transaction for?</span></label>
+      <input
+        class="input"
+        id="txNote"
+        type="text"
+        placeholder="${
+          isAdd
+            ? "e.g. Store reimbursement, Cash float, ATM..."
+            : "e.g. Store supplies upfront, Lunch, Gas..."
+        }"
+        value="${editing ? escapeHTML(existing.note || "") : ""}"
+      >
+      <div class="note-chips" id="txQuickChips">
+        ${
+          (isAdd ? QUICK_NOTES_ADD : QUICK_NOTES_DEDUCT).map(chip => `
+            <button class="note-chip" type="button" onclick="fillQuickNote('${escapeHTML(chip)}')">
+              + ${escapeHTML(chip)}
+            </button>
+          `).join("")
+        }
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Date</label>
+      <input
+        class="input"
+        id="txDate"
+        type="date"
+        max="${todayISO()}"
+        value="${editing ? dateInputValue(existing.date) : todayISO()}"
+      >
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-btn" type="button" onclick="closeModal()">
+        Cancel
+      </button>
+      <button
+        id="txSaveBtn"
+        class="modal-btn ${isAdd ? "add-confirm" : "primary"}"
+        type="button"
+        onclick="saveRecord('${editing ? existing.id : ""}')">
+        ${editing ? "Save changes" : (isAdd ? "Add Cash" : "Deduct Expense")}
+      </button>
+    </div>
+  `;
+
+  openModal("txAmount");
+  updateModalBalancePreview(editing ? existing.id : "");
+}
+
+function saveRecord(id) {
+  const existing = id ? data.records.find(r => r.id === id) : null;
+  if (id && !existing) {
+    closeModal();
+    return;
+  }
+
+  const amount = round2(document.getElementById("txAmount")?.value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showToast("Enter a valid amount");
+    return;
+  }
+
+  const category = _modalCategory === "Deduct" ? "Deduct" : "Add";
+  const noteRaw = (document.getElementById("txNote")?.value || "").trim();
+  const note = noteRaw || (category === "Add" ? "Cash added" : "Expense");
+  const dateStr = document.getElementById("txDate")?.value || todayISO();
+
+  if (isFutureDate(dateStr)) {
+    showToast("Date can't be in the future");
+    return;
+  }
+
+  let baseBalance = cashOnHand();
+  if (existing) {
+    const oldAmt = Number(existing.amount) || 0;
+    baseBalance = existing.category === "Add"
+      ? round2(baseBalance - oldAmt)
+      : round2(baseBalance + oldAmt);
+  }
+
+  const commitRecord = () => {
+    if (existing) {
+      existing.category = category;
+      existing.amount = amount;
+      existing.note = note;
+      existing.date = entryDateISO(dateStr, existing.date);
+    } else {
+      data.records.unshift({
+        id: uid(),
+        category,
+        amount,
+        note,
+        date: entryDateISO(dateStr, null)
+      });
+    }
+
+    saveData();
+    closeModal();
+    renderAll();
+
+    const newBal = cashOnHand();
+    showToast(
+      existing
+        ? `Updated · Cash on hand: ${currency(newBal)}`
+        : (category === "Add"
+            ? `+${currency(amount)} added · Balance: ${currency(newBal)}`
+            : `-${currency(amount)} deducted · Balance: ${currency(newBal)}`)
+    );
+  };
+
+  if (category === "Deduct" && amount > baseBalance) {
+    showConfirmModal({
+      title: "Cash Balance Notice",
+      message:
+        `This expense (${currency(amount)}) is more than your current cash on hand (${currency(baseBalance)}).\n\n` +
+        `Your balance will become ${currency(round2(baseBalance - amount))}.\n\n` +
+        `Do you want to record it anyway?`,
+      confirmText: existing ? "Save Anyway" : "Deduct Anyway",
+      isDanger: false,
+      onConfirm: commitRecord
+    });
+    return;
+  }
+
+  commitRecord();
+}
+
+function deleteRecord(id) {
+  const r = data.records.find(x => x.id === id);
+  if (!r) return;
+
+  const label = r.note || r.category;
+
+  showConfirmModal({
+    title: "Delete Transaction",
+    message: `Delete this ${r.category.toLowerCase()} record?\n\nNote: ${label}\nAmount: ${currency(r.amount)}\nDate: ${formatDate(r.date)}`,
+    confirmText: "Delete",
+    isDanger: true,
+    onConfirm: () => {
+      data.records = data.records.filter(x => x.id !== id);
+      saveData();
+      renderAll();
+      showToast("Record deleted");
+    }
+  });
+}
+
+
+/* ============================================================
+   9. SETTINGS, PALETTES, BACKUP & EXPORT
+   ============================================================ */
+
+function renderSettings() {
+  const nameEl = document.getElementById("nameInput");
+  if (nameEl) nameEl.value = data.settings.name || "";
+
+  const curEl = document.getElementById("currencyInput");
+  if (curEl) curEl.value = data.settings.currency || "₱";
+
+  const themeEl = document.getElementById("themeToggle");
+  if (themeEl) {
+    themeEl.classList.toggle("on", data.settings.theme === "dark");
+    themeEl.setAttribute("aria-checked", String(data.settings.theme === "dark"));
+  }
+
+  renderPaletteGrid();
+
+  const pinEl = document.getElementById("pinToggle");
+  if (pinEl) {
+    pinEl.classList.toggle("on", pinIsSet());
+    pinEl.setAttribute("aria-checked", String(pinIsSet()));
+  }
+
+  const pinStatus = document.getElementById("pinStatusText");
+  if (pinStatus) {
+    pinStatus.textContent = pinIsSet() ? "PIN is enabled" : "No PIN set";
+  }
+
+  const dbTitle = document.getElementById("dbStatusTitle");
+  const dbDesc  = document.getElementById("dbStatusDesc");
+  if (dbTitle && dbDesc) {
+    if (storageStatus.blocked) {
+      dbTitle.textContent = "Database Read Blocked";
+      dbDesc.textContent = "Reload the app to reconnect to local storage.";
+    } else {
+      dbTitle.textContent = storageStatus.persistent
+        ? "Database Active & Persistent (IndexedDB)"
+        : "Database Active (IndexedDB + Local Mirror)";
+      dbDesc.textContent = `${data.records.length} transaction record${data.records.length === 1 ? "" : "s"} safely stored on this device.`;
+    }
+  }
+
+  const sBal = document.getElementById("statSettingBalance");
+  if (sBal) sBal.textContent = currency(cashOnHand());
+
+  const sCnt = document.getElementById("statSettingCount");
+  if (sCnt) sCnt.textContent = String(data.records.length);
+
+  const sAdd = document.getElementById("statSettingAdded");
+  if (sAdd) sAdd.textContent = "+" + currency(totalAdded());
+
+  const sDed = document.getElementById("statSettingDeducted");
+  if (sDed) sDed.textContent = "-" + currency(totalDeducted());
+
+  renderBackupChip();
+
+  const undoRow = document.getElementById("undoImportRow");
+  if (undoRow) undoRow.hidden = !hasImportSnapshot;
+
+  const installRow = document.getElementById("installAppRow");
+  if (installRow) installRow.hidden = !_deferredInstallPrompt;
+}
+
+function renderPaletteGrid() {
+  const grid = document.getElementById("paletteGrid");
+  if (!grid) return;
+
+  const isDark = data.settings.theme === "dark";
+
+  grid.innerHTML = PALETTES.map(p => {
+    const colors = isDark ? p.dark : p.light;
+    const isActive = p.key === data.settings.palette;
+
+    return `
+      <button
+        class="theme-card ${isActive ? "active" : ""}"
+        type="button"
+        data-palette="${p.key}"
+        aria-pressed="${isActive}"
+        aria-label="${escapeHTML(p.name)} theme"
+        onclick="applyPalette('${p.key}')">
+        <div class="theme-card-header">
+          <div class="theme-swatches">
+            <span class="theme-dot" style="background:${colors.bg}" title="Background"></span>
+            <span class="theme-dot" style="background:${colors.surface}" title="Surface"></span>
+            <span class="theme-dot" style="background:${colors.accent}" title="Accent"></span>
+          </div>
+          <span class="theme-check">${isActive ? "✓" : ""}</span>
+        </div>
+        <div class="theme-card-body">
+          <span class="theme-name">${escapeHTML(p.name)}</span>
+          <span class="theme-desc">${escapeHTML(p.desc)}</span>
+        </div>
+      </button>
+    `;
+  }).join("");
+}
+
+function applyPalette(key) {
+  const p = PALETTES.find(item => item.key === key);
+  if (!p) return;
+
+  data.settings.palette = key;
+  applyThemeToDocument();
+  saveData();
+  renderPaletteGrid();
+  showToast(`Theme: ${p.name}`);
+}
+
+function toggleTheme() {
+  data.settings.theme = data.settings.theme === "dark" ? "light" : "dark";
+  applyThemeToDocument();
+  saveData();
+  renderSettings();
+}
+
+function applyThemeToDocument() {
+  const html = document.documentElement;
+
+  html.setAttribute("data-theme", data.settings.theme === "dark" ? "dark" : "light");
+  html.setAttribute("data-palette", data.settings.palette || "coffee");
+
+  const meta = document.querySelector('meta[name="theme-color"]');
+  let surface = "";
+  if (meta) {
+    surface = getComputedStyle(html).getPropertyValue("--bg").trim();
+    if (surface) meta.setAttribute("content", surface);
+  }
+
+  try {
+    localStorage.setItem(THEME_CACHE_KEY, JSON.stringify({
+      theme: html.getAttribute("data-theme"),
+      palette: html.getAttribute("data-palette"),
+      bg: surface
+    }));
+  } catch (e) { /* ignore */ }
+}
+
+function saveSettings() {
+  const nameEl = document.getElementById("nameInput");
+  const curEl  = document.getElementById("currencyInput");
+
+  if (nameEl) data.settings.name = nameEl.value.trim();
+  if (curEl)  data.settings.currency = curEl.value;
+
+  saveData();
+  renderAll();
+  showToast("Settings saved");
+}
+
+function renderBackupChip() {
+  const chip = document.getElementById("backupChip");
+  const text = document.getElementById("lastBackupText");
+  if (!chip || !text) return;
+
+  const iso = data.settings.lastBackupAt;
+  if (!iso) {
+    text.textContent = "never";
+    chip.classList.add("bad");
+    chip.classList.remove("warn");
+    return;
+  }
+
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) {
+    text.textContent = "today";
+    chip.classList.remove("bad", "warn");
+  } else if (days === 1) {
+    text.textContent = "yesterday";
+    chip.classList.remove("bad", "warn");
+  } else if (days < 7) {
+    text.textContent = days + " days ago";
+    chip.classList.remove("bad", "warn");
+  } else if (days < 14) {
+    text.textContent = days + " days ago";
+    chip.classList.add("warn");
+    chip.classList.remove("bad");
+  } else {
+    text.textContent = days + " days ago";
+    chip.classList.add("bad");
+    chip.classList.remove("warn");
+  }
+}
+
+function exportData() {
+  data.settings.lastBackupAt = new Date().toISOString();
+  saveData();
+
+  const out = JSON.parse(JSON.stringify(data));
+  out.settings.pinHash = "";
+  out.app = "OnHand";
+  out.schemaVersion = 1;
+
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  a.href = url;
+  a.download = `onhand-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  renderBackupChip();
+  showToast("Backup downloaded");
+}
+
+function exportCSV() {
+  if (!data.records.length) {
+    showToast("No records to export");
+    return;
+  }
+
+  const runningMap = computeRunningBalances();
+  const chronological = data.records
+    .slice()
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  const escapeCSV = (val) => {
+    const s = String(val ?? "");
+    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+
+  const rows = [
+    ["Date", "Time", "Category", "Amount", "Signed Amount", "Note", "Running Cash Balance"]
+  ];
+
+  chronological.forEach(r => {
+    const signed = r.category === "Add" ? r.amount : -r.amount;
+    rows.push([
+      dateInputValue(r.date),
+      formatTime(r.date),
+      r.category,
+      r.amount,
+      signed,
+      r.note || "",
+      runningMap.get(r.id) ?? 0
+    ]);
+  });
+
+  const csvContent = rows.map(row => row.map(escapeCSV).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  a.href = url;
+  a.download = `onhand-history-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast("CSV exported");
+}
+
+function looksLikeBackup(o) {
+  return Boolean(
+    o && typeof o === "object" && !Array.isArray(o) &&
+    (Array.isArray(o.records) || Array.isArray(o.transactions))
+  );
+}
+
+function importData(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  if (storageStatus.blocked) {
+    showToast("Can't import while storage is unavailable");
+    input.value = "";
+    return;
+  }
+
+  if (file.size > 20 * 1024 * 1024) {
+    showToast("File is too large");
+    input.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    let incoming;
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!looksLikeBackup(parsed)) throw new Error("Invalid backup");
+      incoming = normalizeData(parsed);
+    } catch (err) {
+      showToast("Invalid backup file");
+      input.value = "";
+      return;
+    }
+
+    input.value = "";
+    incoming.settings.pinHash = data.settings.pinHash;
+
+    showConfirmModal({
+      title: "Replace current records?",
+      message:
+        `This backup contains ${incoming.records.length} transaction record${incoming.records.length === 1 ? "" : "s"}.\n` +
+        `Currently on this device: ${data.records.length} record${data.records.length === 1 ? "" : "s"}.\n\n` +
+        `Importing replaces current records. You can undo it afterwards from Settings.`,
+      confirmText: "Replace Data",
+      isDanger: true,
+      onConfirm: () => { applyImport(incoming); }
+    });
+  };
+
+  reader.onerror = function () {
+    showToast("Could not read file");
+    input.value = "";
+  };
+
+  reader.readAsText(file);
+}
+
+async function applyImport(incoming) {
+  try {
+    await writeState(data, PRE_IMPORT_KEY);
+    hasImportSnapshot = true;
+  } catch (err) {
+    console.warn("OnHand: could not create safety copy", err);
+    showToast("Couldn't make a safety copy, so nothing was imported");
+    return;
+  }
+
+  data = incoming;
+  saveData();
+  applyThemeToDocument();
+  renderAll();
+  showToast("Backup imported");
+}
+
+function undoImport() {
+  showConfirmModal({
+    title: "Undo last import?",
+    message: "This restores the records you had before the last import.",
+    confirmText: "Undo Import",
+    isDanger: true,
+    onConfirm: async () => {
+      let snap = null;
+      try { snap = await readState(PRE_IMPORT_KEY); } catch (e) { /* ignore */ }
+
+      if (!snap) {
+        hasImportSnapshot = false;
+        renderSettings();
+        showToast("Nothing to undo");
+        return;
+      }
+
+      const restored = normalizeData(snap);
+      restored.settings.pinHash = data.settings.pinHash;
+
+      data = restored;
+      saveData();
+
+      try { await clearState(PRE_IMPORT_KEY); } catch (e) { /* ignore */ }
+      hasImportSnapshot = false;
+
+      applyThemeToDocument();
+      renderAll();
+      showToast("Import undone");
+    }
+  });
+}
+
+function resetData() {
+  showConfirmModal({
+    title: "Reset Everything",
+    message: "This will permanently delete all your OnHand cash & expense records.\n\nAre you sure? This cannot be undone.",
+    confirmText: "Delete All Data",
+    isDanger: true,
+    onConfirm: () => {
+      Promise.allSettled([clearState(), clearState(PRE_IMPORT_KEY)])
+        .finally(() => {
+          hasImportSnapshot = false;
+          wipeMirror();
+          data = defaultData();
+          saveData();
+          applyThemeToDocument();
+          renderAll();
+          navigate("home");
+          showToast("All records reset");
+        });
+    }
+  });
+}
+
+
+/* ============================================================
+   10. PIN LOCK SYSTEM
+   ============================================================ */
+
+const PIN_MIN = 4;
+const PIN_MAX = 6;
+const PIN_MAX_ATTEMPTS = 3;
+const PIN_COOLDOWN_MS = 30000;
+
+const pinState = {
+  buffer: "",
+  target: "",
+  attempts: 0,
+  cooldownUntil: 0,
+  firstEntry: "",
+  stage: ""
+};
+
+async function sha256(text) {
+  if (!window.crypto || !window.crypto.subtle) {
+    let h = 0;
+    for (let i = 0; i < text.length; i++) {
+      h = ((h << 5) - h) + text.charCodeAt(i);
+      h |= 0;
+    }
+    return "weak-" + Math.abs(h).toString(16);
+  }
+
+  const buf = new TextEncoder().encode(text);
+  const hashBuf = await crypto.subtle.digest("SHA-256", buf);
+
+  return Array.from(new Uint8Array(hashBuf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function pinIsSet() {
+  return Boolean(data.settings.pinHash);
+}
+
+async function pinMatches(entered) {
+  const hash = await sha256(entered);
+  return hash === data.settings.pinHash;
+}
+
+function pinBufferReset() {
+  pinState.buffer = "";
+  renderPinDots();
+}
+
+function pinBufferPush(digit) {
+  if (pinState.buffer.length >= PIN_MAX) return;
+  pinState.buffer += digit;
+  renderPinDots();
+  if (pinState.buffer.length === PIN_MAX) {
+    submitPinBuffer();
+  }
+}
+
+function pinBufferBack() {
+  if (pinState.buffer.length === 0) return;
+  pinState.buffer = pinState.buffer.slice(0, -1);
+  renderPinDots();
+}
+
+function renderPinDots() {
+  const dots = document.getElementById("pinDots");
+  if (!dots) return;
+
+  const length = pinState.buffer.length;
+  dots.innerHTML = "";
+  for (let i = 0; i < Math.max(PIN_MIN, length); i++) {
+    const d = document.createElement("div");
+    d.className = "pin-dot" + (i < length ? " filled" : "");
+    dots.appendChild(d);
+  }
+}
+
+function pinError(message) {
+  const hint = document.getElementById("pinHint");
+  if (hint) {
+    hint.textContent = message;
+    hint.classList.add("error");
+  }
+
+  const lock = document.querySelector(".pin-lock-inner");
+  if (lock) {
+    lock.classList.remove("pin-shake");
+    void lock.offsetWidth;
+    lock.classList.add("pin-shake");
+  }
+
+  if (navigator.vibrate) navigator.vibrate(60);
+}
+
+function pinClearError() {
+  const hint = document.getElementById("pinHint");
+  if (hint) hint.classList.remove("error");
+}
+
+async function submitPinBuffer() {
+  if (pinState.buffer.length < PIN_MIN) {
+    pinError("PIN too short");
+    return;
+  }
+
+  const now = Date.now();
+  if (now < pinState.cooldownUntil) return;
+
+  const entered = pinState.buffer;
+
+  if (pinState.target === "setup") {
+    await pinSetupConfirmOrContinue();
+    return;
+  }
+
+  if (pinState.target === "unlock") {
+    const ok = await pinMatches(entered);
+    if (ok) {
+      pinBufferReset();
+      unlockApp();
+      return;
+    }
+
+    pinState.attempts++;
+    if (pinState.attempts >= PIN_MAX_ATTEMPTS) {
+      pinState.cooldownUntil = Date.now() + PIN_COOLDOWN_MS;
+      pinState.attempts = 0;
+      pinBufferReset();
+      startCooldownCountdown();
+      pinError("Too many attempts — wait 30s");
+    } else {
+      pinBufferReset();
+      pinError("Wrong PIN");
+    }
+    return;
+  }
+
+  if (pinState.target === "verify-for-disable") {
+    const ok = await pinMatches(entered);
+    if (ok) {
+      pinBufferReset();
+      unlockApp();
+      data.settings.pinHash = "";
+      saveData();
+      renderSettings();
+      showToast("PIN disabled");
+      return;
+    }
+    pinBufferReset();
+    pinError("Wrong PIN");
+  }
+}
+
+function startCooldownCountdown() {
+  const hint = document.getElementById("pinHint");
+  const tick = () => {
+    const remaining = pinState.cooldownUntil - Date.now();
+    if (remaining <= 0) {
+      if (hint) {
+        hint.textContent = "Enter your PIN";
+        hint.classList.remove("error");
+      }
+      return;
+    }
+    if (hint) {
+      hint.textContent = "Wait " + Math.ceil(remaining / 1000) + "s";
+    }
+    setTimeout(tick, 300);
+  };
+  tick();
+}
+
+function setAppInert() {
+  const overlay = document.getElementById("modalOverlay");
+  const on =
+    document.body.classList.contains("app-locked") ||
+    Boolean(overlay && overlay.classList.contains("show"));
+
+  [
+    document.getElementById("appRoot"),
+    document.querySelector(".bottom-nav"),
+    document.getElementById("storageBanner")
+  ].forEach(el => {
+    if (!el) return;
+    if (on) {
+      el.setAttribute("aria-hidden", "true");
+      el.setAttribute("inert", "");
+    } else {
+      el.removeAttribute("aria-hidden");
+      el.removeAttribute("inert");
+    }
+  });
+}
+
+function pinCancellable() {
+  return pinState.target === "setup" || pinState.target === "verify-for-disable";
+}
+
+function syncPinButtons() {
+  const cancel = document.getElementById("pinCancel");
+  const forgot = document.getElementById("pinForgot");
+  const cancellable = pinCancellable();
+
+  if (cancel) cancel.hidden = !cancellable;
+  if (forgot) forgot.hidden = cancellable;
+}
+
+function pinCancel() {
+  if (!pinCancellable()) return;
+  pinBufferReset();
+  pinState.firstEntry = "";
+  unlockApp();
+}
+
+function bindPinCancel() {
+  const btn = document.getElementById("pinCancel");
+  if (btn) btn.addEventListener("click", pinCancel);
+}
+
+function showLockScreen(target) {
+  closeModal();
+
+  pinState.target = target || "unlock";
+  pinState.buffer = "";
+  pinState.stage = "enter";
+
+  const lock = document.getElementById("pinLock");
+  const hint = document.getElementById("pinHint");
+
+  if (hint) {
+    hint.textContent = target === "setup" ? "Choose a 4–6 digit PIN" : "Enter your PIN";
+    hint.classList.remove("error");
+  }
+
+  renderPinDots();
+  if (lock) {
+    lock.classList.add("show");
+    lock.setAttribute("aria-hidden", "false");
+  }
+  document.body.classList.add("app-locked");
+  setAppInert();
+  syncPinButtons();
+}
+
+function unlockApp() {
+  const lock = document.getElementById("pinLock");
+  if (lock) {
+    lock.classList.remove("show");
+    lock.setAttribute("aria-hidden", "true");
+  }
+  document.body.classList.remove("app-locked");
+  setAppInert();
+  pinState.target = "";
+  pinState.stage = "";
+  pinState.attempts = 0;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && pinIsSet() && pinState.target !== "setup") {
+    showLockScreen("unlock");
+  }
+});
+
+async function pinSetupConfirmOrContinue() {
+  const entered = pinState.buffer;
+
+  if (pinState.stage === "enter") {
+    if (entered.length < PIN_MIN) {
+      pinError("PIN must be at least " + PIN_MIN + " digits");
+      pinBufferReset();
+      return;
+    }
+    pinState.firstEntry = entered;
+    pinState.stage = "confirm";
+    pinBufferReset();
+
+    const hint = document.getElementById("pinHint");
+    if (hint) {
+      hint.textContent = "Enter it again to confirm";
+      hint.classList.remove("error");
+    }
+    return;
+  }
+
+  if (pinState.stage === "confirm") {
+    if (entered !== pinState.firstEntry) {
+      pinError("PINs didn't match");
+      pinBufferReset();
+      pinState.stage = "enter";
+      pinState.firstEntry = "";
+      const hint = document.getElementById("pinHint");
+      if (hint) hint.textContent = "Choose a 4–6 digit PIN";
+      return;
+    }
+
+    data.settings.pinHash = await sha256(entered);
+    saveData();
+
+    pinBufferReset();
+    unlockApp();
+    renderSettings();
+    showToast("PIN enabled");
+  }
+}
+
+function togglePin() {
+  if (pinIsSet()) {
+    showLockScreen("verify-for-disable");
+    return;
+  }
+  pinState.firstEntry = "";
+  showLockScreen("setup");
+}
+
+function pinPadPress(digit) {
+  if (Date.now() < pinState.cooldownUntil) return;
+  pinClearError();
+  pinBufferPush(digit);
+}
+
+function pinPadBackspace() {
+  pinClearError();
+  pinBufferBack();
+}
+
+function pinPadConfirm() {
+  if (pinState.buffer.length < PIN_MIN) {
+    pinError("PIN too short");
+    return;
+  }
+  submitPinBuffer();
+}
+
+function renderPinPad() {
+  const pad = document.getElementById("pinPad");
+  if (!pad) return;
+
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+  let html = "";
+  keys.forEach(k => {
+    html += `<button class="pin-key" type="button" data-pin="${k}">${k}</button>`;
+  });
+  html += `<button class="pin-key" type="button" data-pin-action="confirm">${ICONS.check}</button>`;
+  html += `<button class="pin-key" type="button" data-pin="0">0</button>`;
+  html += `<button class="pin-key" type="button" data-pin-action="backspace">${ICONS.backspace}</button>`;
+
+  pad.innerHTML = html;
+
+  pad.querySelectorAll("[data-pin]").forEach(btn => {
+    btn.addEventListener("click", () => pinPadPress(btn.getAttribute("data-pin")));
+  });
+  pad.querySelector('[data-pin-action="confirm"]')?.addEventListener("click", pinPadConfirm);
+  pad.querySelector('[data-pin-action="backspace"]')?.addEventListener("click", pinPadBackspace);
+}
+
+async function eraseAllLocalData() {
+  storageStatus.blocked = true;
+  try { if (_db) _db.close(); } catch (e) { /* ignore */ }
+  _db = null;
+
+  await new Promise(resolve => {
+    let settled = false;
+    const done = () => { if (!settled) { settled = true; resolve(); } };
+    try {
+      const req = indexedDB.deleteDatabase(DB_NAME);
+      req.onsuccess = done;
+      req.onerror   = done;
+      req.onblocked = () => setTimeout(done, 2000);
+    } catch (e) {
+      done();
+    }
+    setTimeout(done, 5000);
+  });
+
+  wipeMirror();
+  location.reload();
+}
+
+function bindPinForgot() {
+  const btn = document.getElementById("pinForgot");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    showConfirmModal({
+      title: "Forgot PIN?",
+      message: "This will erase ALL local records so the app can be opened again.\n\nAre you sure you want to proceed?",
+      confirmText: "Erase All Data",
+      isDanger: true,
+      onConfirm: () => { eraseAllLocalData(); }
+    });
+  });
+}
+
+
+/* ============================================================
+   11. NAVIGATION & MODAL MANAGEMENT
+   ============================================================ */
+
+function navigate(page) {
+  document.querySelectorAll(".page").forEach(el => el.classList.remove("active"));
+
+  const target = document.getElementById(page + "Page");
+  if (target) target.classList.add("active");
+
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.classList.remove("active");
+    el.removeAttribute("aria-current");
+  });
+
+  const activeNav = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (activeNav) {
+    activeNav.classList.add("active");
+    activeNav.setAttribute("aria-current", "page");
+  }
+
+  const avatarBtn = document.getElementById("avatarBtn");
+  if (avatarBtn) avatarBtn.classList.toggle("active", page === "settings");
+
+  if (page === "home")     renderHomePage();
+  if (page === "history")  renderHistoryPage();
+  if (page === "settings") renderSettings();
+
+  window.scrollTo({
+    top: 0,
+    behavior:
+      window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth"
+  });
+}
+
+const MODAL_FOCUS_DELAY_MS = 120;
+let _modalReturnFocus = null;
+let _autoFieldSeq = 0;
+
+function autoLabelFields(root) {
+  const FIELD = "input:not([type=hidden]), select, textarea";
+  (root || document).querySelectorAll("label").forEach(label => {
+    if (label.htmlFor || label.querySelector(FIELD)) return;
+    const next = label.nextElementSibling;
+    if (!next) return;
+    const controls = next.matches(FIELD) ? [next] : Array.from(next.querySelectorAll(FIELD));
+    if (controls.length === 1) {
+      const ctl = controls[0];
+      if (!ctl.id) ctl.id = `auto-field-${++_autoFieldSeq}`;
+      label.htmlFor = ctl.id;
+    }
+  });
+}
+
+function syncPressed(root) {
+  (root || document)
+    .querySelectorAll(".filter, .theme-card")
+    .forEach(el => {
+      el.setAttribute("aria-pressed", el.classList.contains("active") ? "true" : "false");
+    });
+}
+
+function openModal(focusId) {
+  const overlay = document.getElementById("modalOverlay");
+  const modal = document.getElementById("modalContent");
+
+  if (!overlay.classList.contains("show")) {
+    const el = document.activeElement;
+    _modalReturnFocus = el && el !== document.body ? el : null;
+  }
+
+  if (modal) {
+    autoLabelFields(modal);
+    syncPressed(modal);
+  }
+
+  overlay.classList.add("show");
+  document.body.classList.add("modal-open");
+  setAppInert();
+
+  if (focusId) {
+    setTimeout(() => {
+      const el = document.getElementById(focusId);
+      if (el) el.focus();
+    }, MODAL_FOCUS_DELAY_MS);
+  }
+}
+
+function closeModal() {
+  const overlay = document.getElementById("modalOverlay");
+  const wasOpen = overlay.classList.contains("show");
+
+  overlay.classList.remove("show");
+  document.body.classList.remove("modal-open");
+  setAppInert();
+
+  if (wasOpen && _modalReturnFocus && document.contains(_modalReturnFocus)) {
+    try { _modalReturnFocus.focus(); } catch (e) { /* ignore */ }
+    _modalReturnFocus = null;
+  }
+}
+
+let _pressStartedOnBackdrop = false;
+document.addEventListener("pointerdown", e => {
+  _pressStartedOnBackdrop = Boolean(e.target && e.target.id === "modalOverlay");
+}, true);
+
+function closeModalOutside(event) {
+  if (event.target.id === "modalOverlay" && _pressStartedOnBackdrop) {
+    closeModal();
+  }
+}
+
+function renderAll() {
+  renderHomePage();
+  renderHistoryPage();
+  renderSettings();
+}
+
+
+/* ============================================================
+   12. KEYBOARD, PWA INSTALL & STARTUP
+   ============================================================ */
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeModal();
+  }
+
+  const lockVisible = document.getElementById("pinLock")?.classList.contains("show");
+  if (lockVisible) {
+    if (event.key === "Escape" && pinCancellable()) {
+      event.preventDefault();
+      pinCancel();
+      return;
+    }
+    if (/^\d$/.test(event.key)) {
+      event.preventDefault();
+      pinPadPress(event.key);
+    } else if (event.key === "Backspace") {
+      event.preventDefault();
+      pinPadBackspace();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      pinPadConfirm();
+    }
+  }
+});
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  const installRow = document.getElementById("installAppRow");
+  if (installRow) installRow.hidden = false;
+});
+
+window.addEventListener("appinstalled", () => {
+  _deferredInstallPrompt = null;
+  const installRow = document.getElementById("installAppRow");
+  if (installRow) installRow.hidden = true;
+  showToast("OnHand installed");
+});
+
+async function triggerInstallPWA() {
+  if (!_deferredInstallPrompt) return;
+  _deferredInstallPrompt.prompt();
+  try {
+    await _deferredInstallPrompt.userChoice;
+  } catch (e) { /* ignore */ }
+  _deferredInstallPrompt = null;
+  const installRow = document.getElementById("installAppRow");
+  if (installRow) installRow.hidden = true;
+}
+
+async function startApp() {
+  paintIcons(document);
+
+  try {
+    data = await loadData();
+  } catch (e) {
+    console.warn("OnHand: load failed, using defaults", e);
+    data = defaultData();
+    storageStatus.blocked = true;
+  }
+
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const granted = await navigator.storage.persist();
+      storageStatus.persistent = Boolean(granted);
+    }
+  } catch (e) { /* ignore */ }
+
+  if (!storageStatus.blocked) {
+    try { hasImportSnapshot = Boolean(await readState(PRE_IMPORT_KEY)); }
+    catch (e) { hasImportSnapshot = false; }
+  }
+
+  applyThemeToDocument();
+  renderPinPad();
+  bindPinForgot();
+  bindPinCancel();
+  bindStorageBanner();
+  autoLabelFields(document);
+  syncPressed();
+
+  if (pinIsSet()) {
+    showLockScreen("unlock");
+  }
+
+  renderAll();
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+}
+
+startApp()
+  .catch(err => console.error("OnHand: startup failed", err))
+  .finally(() => document.documentElement.classList.remove("booting"));
+</script>
+
+</body>
+</html>

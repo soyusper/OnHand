@@ -1,0 +1,25 @@
+{
+  "name": "OnHand — Cash & Expense Tracker",
+  "short_name": "OnHand",
+  "description": "Offline-first cash on hand and expense tracker with local database.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5efe3",
+  "theme_color": "#f5efe3",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%23252321'/%3E%3Crect x='28' y='48' width='136' height='96' rx='14' fill='none' stroke='%23f5efe3' stroke-width='10'/%3E%3Cpath d='M124 84h40v24h-40a12 12 0 0 1 0-24z' fill='%23b85e49' stroke='%23f5efe3' stroke-width='8'/%3E%3Ccircle cx='138' cy='96' r='5' fill='%23fffdf8'/%3E%3Cpath d='M56 82h36M56 110h24' stroke='%23b85e49' stroke-width='10' stroke-linecap='round'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23252321'/%3E%3Crect x='74' y='128' width='364' height='256' rx='36' fill='none' stroke='%23f5efe3' stroke-width='26'/%3E%3Cpath d='M330 224h108v64H330a32 32 0 0 1 0-64z' fill='%23b85e49' stroke='%23f5efe3' stroke-width='22'/%3E%3Ccircle cx='368' cy='256' r='14' fill='%23fffdf8'/%3E%3Cpath d='M148 218h96M148 294h64' stroke='%23b85e49' stroke-width='26' stroke-linecap='round'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
